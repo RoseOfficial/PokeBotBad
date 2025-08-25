@@ -5,3 +5,11 @@ wiki/*/*.txt
 *.iml
 .idea/modules.xml
 *.xml
+
+# Emulator-specific files
+BizHawk-*/config.ini
+BizHawk-*/Gameboy/SaveRAM/
+BizHawk-*/Gameboy/Screenshots/
+
+# Claude Code documentation
+CLAUDE.md
