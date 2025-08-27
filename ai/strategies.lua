@@ -70,15 +70,58 @@ function Strategies.hardReset(reason, message, extra, wait)
 
 	if reason ~= "won" then
 		f, err = io.open(RESET_LOG, "a")
+		if f~=nil then
+			f:write(newmessage.."\n")
+			f:close()
+		else
+			print("Couldn't open file: "..err)
+		end
 	else
 		f, err = io.open(VICTORY_LOG, "a")
-	end
-
-	if f==nil then
-		print("Couldn't open file: "..err)
-	else
-		f:write(newmessage.."\n")
-		f:close()
+		if f~=nil then
+			-- Enhanced victory logging with detailed statistics
+			local timestamp = os.date("%Y-%m-%d %H:%M:%S")
+			local finishTime = status.finishTime or "Unknown"
+			local frames = Data.run.frames or Utils.frames() or "Unknown"
+			local playerName = Textbox.getNamePlaintext() or "Unknown"
+			local gameName = Data.gameName or "red"
+			
+			-- Pokemon data
+			local nidokingLevel = Pokemon.index(0, "level") or "Unknown"
+			local nidokingExp = Pokemon.getExp() or "Unknown"
+			local nidokingHP = Pokemon.index(0, "hp") or "Unknown"
+			local nidokingMaxHP = Pokemon.index(0, "max_hp") or "Unknown"
+			local nidokingAttack = Pokemon.index(0, "attack") or "Unknown"
+			local nidokingDefense = Pokemon.index(0, "defense") or "Unknown"
+			local nidokingSpeed = Pokemon.index(0, "speed") or "Unknown"
+			local nidokingSpecial = Pokemon.index(0, "special") or "Unknown"
+			
+			-- Party composition
+			local partyInfo = {}
+			for i = 0, 5 do
+				local pokemonID = Pokemon.index(i)
+				if pokemonID and pokemonID > 0 then
+					local pokemonName = Pokemon.getName(pokemonID) or "Unknown"
+					local pokemonLevel = Pokemon.index(i, "level") or "?"
+					table.insert(partyInfo, pokemonName.."(L"..pokemonLevel..")")
+				end
+			end
+			local partyString = table.concat(partyInfo, ",")
+			
+			-- Enhanced log entry
+			local detailedMessage = string.format(
+				"%s | %s | Time: %s | Frames: %s | Player: %s | Game: %s | Seed: %s | "..
+				"Nidoking: L%s HP:%s/%s ATK:%s DEF:%s SPD:%s SPC:%s EXP:%s | Party: %s",
+				timestamp, message, finishTime, frames, playerName, gameName, seed,
+				nidokingLevel, nidokingHP, nidokingMaxHP, nidokingAttack, 
+				nidokingDefense, nidokingSpeed, nidokingSpecial, nidokingExp, partyString
+			)
+			
+			f:write(detailedMessage.."\n")
+			f:close()
+		else
+			print("Couldn't open file: "..err)
+		end
 	end
 
 	local map, px, py = Memory.value("game", "map"), Player.position()
