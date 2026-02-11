@@ -10,11 +10,16 @@ local Memory = require "util.memory"
 local Player = require "util.player"
 
 local Pokemon = require "storage.pokemon"
+local Constants = require "util.constants"
 
 local path, stepIdx, currentMap
 local pathIdx = 0
 local customIdx = 1
 local customDir = 1
+
+-- Position-change stuck detection
+local lastWalkX, lastWalkY
+local walkStuckFrames = 0
 
 -- Private functions
 
@@ -65,6 +70,22 @@ function Walk.reset()
 	customDir = 1
 	currentMap = nil
 	Walk.strategy = nil
+	lastWalkX, lastWalkY = nil, nil
+	walkStuckFrames = 0
+end
+
+function Walk.isStuck()
+	local px, py = Player.position()
+	if px == lastWalkX and py == lastWalkY then
+		walkStuckFrames = walkStuckFrames + 1
+		if walkStuckFrames >= Constants.WALK_STUCK_FRAMES then
+			return true
+		end
+	else
+		lastWalkX, lastWalkY = px, py
+		walkStuckFrames = 0
+	end
+	return false
 end
 
 function Walk.init()

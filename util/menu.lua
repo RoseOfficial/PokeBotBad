@@ -203,7 +203,7 @@ end
 -- 0x1ffd == 110: We're using PC, we're entering a building.
 -- Side node: "game.textbox" isn't used because it's 0 during a few frames when returning from the Pokémon selection screen after using an item on them.
 function Menu.isOpened()
-	-- TODO: Check Pokémon Yellow (0x1ffb == 160 is probably ok).
+	-- Works for both Red and Yellow: these addresses (0x1ffb, 0x1ffd) are outside the Yellow bank-switched offset range.
 	return memory.readbyte(0x1ffb) == 160 and (memory.readbyte(0x1ffd) == 153 or memory.readbyte(0x1ffd) == 110)
 end
 

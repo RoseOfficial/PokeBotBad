@@ -5,3 +5,20 @@ wiki/*/*.txt
 *.iml
 .idea/modules.xml
 *.xml
+
+# AI tooling
+CLAUDE.md
+.claude/
+
+# Per-machine config
+config.lua
+
+# Emulator save data
+BizHawk-1.11.6/Gameboy/SaveRAM/
+
+# LiveSplit local config
+LiveSplit_1.6.9/settings.cfg
+livesplit things/
+
+# Python cache (orphaned)
+.pytest_cache/

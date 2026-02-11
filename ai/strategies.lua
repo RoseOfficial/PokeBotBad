@@ -20,6 +20,7 @@ local json = require "external.json"
 
 local Inventory = require "storage.inventory"
 local Pokemon = require "storage.pokemon"
+local Constants = require "util.constants"
 
 local splitNumber, splitTime = 0, 0
 local resetting
@@ -30,6 +31,10 @@ Strategies.status = status
 Strategies.stats = stats
 Strategies.updates = {}
 Strategies.deepRun = false
+
+-- Stuck detection
+local strategyFrameCount = 0
+local lastStrategyName = nil
 
 local strategyFunctions
 
@@ -636,7 +641,7 @@ Strategies.functions = {
 			timeRequirement = "shorts"
 			p("Something Fucked up! Should not be here!")
 		elseif Data.yellow then
-			statRequirement = Pokemon.inParty("pidgey") and stats.nidoran.attack == 16 or stats.nidoran.speed == 15 --TODO
+			statRequirement = Pokemon.inParty("pidgey") and (stats.nidoran.attack == 16 or stats.nidoran.speed == 15)
 			timeRequirement = "brock"
 		else
 			statRequirement = stats.nidoran.rating < 2
@@ -882,8 +887,7 @@ Strategies.functions = {
 	skill = function(data)
 		if completedSkillFor(data) then
 			if Data.yellow then
-				-- TODO: should probably call Menu.hasTextbox() too
-				if not Menu.canCloseMessage() then
+				if not Menu.canCloseMessage() and not Menu.hasTextbox() then
 					return true
 				end
 			elseif not Menu.hasTextbox() then
@@ -1044,7 +1048,7 @@ Strategies.functions = {
 				return false
 			end
 			local opp = Battle.opponent()
-			local defLimit = 9001
+			local defLimit = Constants.OVER_9000
 			local forced
 			for __,poke in ipairs(data) do
 				if opp == poke[1] then
@@ -1103,7 +1107,7 @@ Strategies.functions = {
 	fightBulbasaur = function()
 		if status.tries < 9000 and Pokemon.index(0, "level") == 6 then
 			if status.tries > 200 then
-				status.tries = 9001
+				status.tries = Constants.OVER_9000
 
 				local attDV, defDV, spdDV, sclDV = Pokemon.getDVs("squirtle")
 				local attack, defense, speed, special = Pokemon.index(0, "attack"), Pokemon.index(0, "defense"), Pokemon.index(0, "speed"), Pokemon.index(0, "special")
@@ -1277,7 +1281,7 @@ Strategies.functions = {
 			end
 			return Strategies.reset("stats", "Bad Nidoran - "..nidoranStatus)
 		end
-		status.tries = 9001
+		status.tries = Constants.OVER_9000
 
 		local statDiff = (16 - att) + (15 - spd) + (13 - scl)
 		if def < 12 then
@@ -2287,13 +2291,28 @@ function Strategies.execute(data)
 		p("INVALID STRATEGY", data.s, Data.gameName)
 		return true
 	end
+
+	-- Stuck detection: track frames spent in current strategy
+	if data.s ~= lastStrategyName then
+		lastStrategyName = data.s
+		strategyFrameCount = 0
+	else
+		strategyFrameCount = strategyFrameCount + 1
+		if strategyFrameCount == Constants.STUCK_WARNING_FRAMES then
+			print("WARNING: Strategy '"..data.s.."' has been running for "..Constants.STUCK_WARNING_FRAMES.." frames (~5 min)")
+			Bridge.chat("stuck on strategy: "..data.s, true)
+		elseif strategyFrameCount >= Constants.STUCK_RESET_FRAMES then
+			print("STUCK: Strategy '"..data.s.."' exceeded "..Constants.STUCK_RESET_FRAMES.." frames (~10 min), resetting")
+			return Strategies.reset("stuck", "Stuck in strategy '"..data.s.."'") or nil
+		end
+	end
+
 	if strategyFunction(data) then
 		status = {tries=0}
 		Strategies.status = status
+		strategyFrameCount = 0
+		lastStrategyName = nil
 		Strategies.completeGameStrategy()
-		-- if Data.yellow and INTERNAL and not STREAMING_MODE then
-		-- 	print(data.s)
-		-- end
 		if resetting then
 			return nil
 		end
@@ -2347,6 +2366,8 @@ function Strategies.softReset()
 
 	splitNumber, splitTime = 0, 0
 	resetting = nil
+	strategyFrameCount = 0
+	lastStrategyName = nil
 	Strategies.deepRun = false
 	Strategies.resetGame()
 end

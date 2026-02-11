@@ -6,11 +6,14 @@ local json = require "external.json"
 
 local socket = require "socket"
 local memory = require "util.memory"
+local Constants = require "util.constants"
 
 local client = nil
 local timeStopped = true
 local timeMin = 0
 local timeFrames = 0
+
+local gameName = nil
 
 local function send(prefix, body)
 	if client then
@@ -18,8 +21,15 @@ local function send(prefix, body)
 		if body then
 			message = message.." "..body
 		end
-		client:send(message.."\n")
-		return true
+		local bytes, err = client:send(message.."\n")
+		if not bytes then
+			print("Bridge send error: "..tostring(err))
+			if err == "closed" or err == "Transport endpoint is not connected" then
+				client = nil
+				Bridge.reconnect()
+			end
+		end
+		return bytes ~= nil
 	end
 end
 
@@ -27,7 +37,9 @@ local function readln()
 	if client then
 		local s, status, partial = client:receive("*l")
 		if status == "closed" then
+			print("Bridge: connection closed by server")
 			client = nil
+			Bridge.reconnect()
 			return nil
 		end
 		if s and s ~= "" then
@@ -38,33 +50,49 @@ end
 
 -- Wrapper functions
 
-function Bridge.init(gameName)
+local function attemptConnect()
+	local c = socket.connect("localhost", Constants.BRIDGE_PORT)
+	if c then
+		c:settimeout(Constants.BRIDGE_TIMEOUT)
+		c:setoption("keepalive", true)
+		return c
+	end
+	return nil
+end
+
+function Bridge.init(name)
+	gameName = name
 	if socket then
-		-- io.popen("java -jar Main.jar")
-		client = socket.connect("localhost", 16834)
-		if client then
-			client:settimeout(0.005)
-			client:setoption("keepalive", true)
-			print("Connected to Java!");
-			send("init,"..gameName)
-			return true
-		else
-			print("Error connecting to Java!");
+		for attempt = 1, Constants.BRIDGE_RETRY_ATTEMPTS do
+			client = attemptConnect()
+			if client then
+				print("Connected to LiveSplit! (attempt "..attempt..")")
+				send("init,"..gameName)
+				return true
+			end
+			print("Connection attempt "..attempt.."/"..Constants.BRIDGE_RETRY_ATTEMPTS.." failed...")
+			if attempt < Constants.BRIDGE_RETRY_ATTEMPTS then
+				-- Busy-wait for BRIDGE_RETRY_DELAY seconds (no os.sleep in BizHawk Lua)
+				local waitUntil = os.clock() + Constants.BRIDGE_RETRY_DELAY
+				while os.clock() < waitUntil do end
+			end
 		end
+		print("ERROR: Could not connect to LiveSplit after "..Constants.BRIDGE_RETRY_ATTEMPTS.." attempts!")
+		print("Make sure LiveSplit Server is running on port "..Constants.BRIDGE_PORT..".")
 	end
 end
 
-function Bridge.tweet(message)
-	if STREAMING_MODE then
-		--print("tweet::"..message)
-		--send("tweet", message)
+function Bridge.reconnect()
+	if not gameName then return false end
+	print("Attempting to reconnect to LiveSplit...")
+	client = attemptConnect()
+	if client then
+		print("Reconnected to LiveSplit!")
+		send("init,"..gameName)
 		return true
 	end
-end
-
-function Bridge.pollForName()
-	Bridge.polling = true
-	--send("poll_name")
+	print("Reconnection failed.")
+	return false
 end
 
 function Bridge.chatRandom(...)
@@ -79,7 +107,6 @@ function Bridge.chat(message, suppressed, extra, newLine)
 			p(message, newLine)
 		end
 	end
-	--return send("msg", message)
 	return true
 end
 
@@ -105,11 +132,6 @@ function Bridge.time()
 	end
 end
 
-function Bridge.stats(message)
-	--return send("stats", message)
-	return true
-end
-
 function Bridge.command(command)
 	print("Bridge Command")
 	return send(command)
@@ -123,30 +145,25 @@ end
 function Bridge.process()
 	local response = readln()
 	if response then
-		-- print(">"..response)
 		if response:find("name:") then
 			return response:gsub("name:", "")
 		end
 	end
 end
 
-function Bridge.input(key)
-	--send("input", key)
+function Bridge.pollForName()
+	Bridge.polling = true
 end
 
-function Bridge.caught(name)
-	if name then
-		--send("caught", name)
-	end
-end
-
-function Bridge.hp(curr_hp, max_hp, curr_xp, max_xp, level)
-	--send("hpxp", curr_hp..","..max_hp..","..curr_xp..","..max_xp..","..level)
-end
-
+-- These functions are called throughout the codebase but the send commands
+-- were disabled by the original author. Kept as no-ops to avoid nil errors.
+function Bridge.caught() end
+function Bridge.hp() end
+function Bridge.stats() end
+function Bridge.input() end
+function Bridge.encounter() end
 
 function Bridge.liveSplit()
-	-- print("Bridge Start Timer")
 	send("initgametime")
 	send("pausegametime")
 	send("starttimer")
@@ -163,10 +180,6 @@ end
 
 function Bridge.pausegametime()
 	send("pausegametime")
-end
-
-function Bridge.encounter()
-	--send("encounter")
 end
 
 function Bridge.report(report)

@@ -413,6 +413,9 @@ end
 
 strategyFunctions.catchNidoran = function()
 	if Battle.isActive() then
+		if not Control.canCatch() then
+			return true
+		end
 		local catchableNidoran = Pokemon.isOpponent("nidoran") and Memory.value("battle", "opponent_level") == 6
 		if not status.inBattle then
 			status.inBattle = true
@@ -421,11 +424,6 @@ strategyFunctions.catchNidoran = function()
 				Bridge.pollForName()
 			end
 			status.path = nil
-		end
-		if Memory.value("battle", "menu") == 94 then
-			if not Control.canCatch() then --TODO move to top
-				return true
-			end
 		end
 		if Memory.value("menu", "text_input") == 240 then
 			Textbox.name()
@@ -709,7 +707,9 @@ strategyFunctions.rivalSandAttack = function()
 						end
 					end
 				end
-			elseif not Pokemon.isOpponent("eevee") then --TODO
+			elseif Pokemon.isOpponent("eevee") then
+				Strategies.chat("eevee_sand", "got Sand-Attack'd by Eevee... No choice but to hit through it.")
+			else
 				Strategies.chat("sacrificed", "got Sand-Attack'd... Attempting to hit through it.")
 			end
 		end
@@ -895,7 +895,7 @@ strategyFunctions.shopBuffs = function()
 	local xSpeeds = Strategies.vaporeon and 6 or 7
 
 	local sellArray = {{name="nugget"}}
-	if Inventory.containsAll("pokeball", "potion") then --TODO , "ether"
+	if Inventory.containsAll("pokeball", "potion", "ether") then
 		if INTERNAL and Strategies.initialize("pokeball") then
 			print("Selling Pokeballs to make up inventory space")
 		end
@@ -941,7 +941,7 @@ end
 -- silphCarbos
 
 strategyFunctions.useSilphCarbos = function(data)
-	if Strategies.getsSilphCarbosSpecially() then --TODO inventory count
+	if Strategies.getsSilphCarbosSpecially() and Inventory.contains("carbos") then
 		data.item = "carbos"
 		data.poke = "nidoking"
 		return strategyFunctions.item(data)

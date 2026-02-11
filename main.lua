@@ -1,23 +1,31 @@
--- OPTIONS
+-- Load configuration (fall back to defaults if config.lua is missing)
+local configOk, config = pcall(dofile, "config.lua")
+if not configOk then
+	print("config.lua not found, using defaults")
+	config = {}
+end
 
-RESET_FOR_TIME = false -- Set to true if you're trying to break the record, not just finish a run
-BEAST_MODE = false -- WARNING: Do not engage. Will yolo everything, and reset at every opportunity in the quest for 1:47.
+-- OPTIONS (from config or defaults)
 
-INITIAL_SPEED = 1500
-AFTER_BROCK_SPEED = 1500
-AFTER_MOON_SPEED = 500
-E4_SPEED = 200
+RESET_FOR_TIME = config.RESET_FOR_TIME or false
+BEAST_MODE = config.BEAST_MODE or false
 
-RESET_LOG = "./wiki/red/resets.txt"
-VICTORY_LOG = "./wiki/red/victories.txt"
+INITIAL_SPEED = config.INITIAL_SPEED or 1500
+AFTER_BROCK_SPEED = config.AFTER_BROCK_SPEED or 1500
+AFTER_MOON_SPEED = config.AFTER_MOON_SPEED or 500
+E4_SPEED = config.E4_SPEED or 200
 
-local CUSTOM_SEED  = nil -- Set to a known seed to replay it, or leave nil for random runs
-local NIDORAN_NAME = "A" -- Set this to the single character to name Nidoran (note, to replay a seed, it MUST match!)
-local PAINT_ON     = true -- Display contextual information while the bot runs
+RESET_LOG = config.RESET_LOG or "./wiki/red/resets.txt"
+VICTORY_LOG = config.VICTORY_LOG or "./wiki/red/victories.txt"
+
+local CUSTOM_SEED  = config.CUSTOM_SEED
+local NIDORAN_NAME = config.NIDORAN_NAME or "A"
+local PAINT_ON     = config.PAINT_ON ~= false  -- default true
+STREAMING_MODE     = config.STREAMING_MODE ~= false  -- default true
 
 -- START CODE (hard hats on)
 
-VERSION = "2.4.8"
+VERSION = "2.5.0"
 CURRENT_SPEED = nil
 
 local Data = require "data.data"
@@ -58,7 +66,7 @@ function resetAll()
 	Utils.reset()
 	oldSeconds = 0
 	running = false
-	
+
 	CURRENT_SPEED = INITIAL_SPEED
   	client.speedmode(INITIAL_SPEED)
 
@@ -80,7 +88,6 @@ p("Welcome to PokeBot "..Utils.capitalize(Data.gameName).." v"..VERSION, true)
 
 Control.init()
 Utils.init()
-STREAMING_MODE = true
 
 if CUSTOM_SEED then
 	Strategies.reboot()
@@ -179,12 +186,19 @@ while true do
 	if not Input.update() then
 		generateNextInput(currentMap)
 	end
+	-- Stuck detection: warn if player position hasn't changed during walk
+	if Walk.strategy and Walk.isStuck() then
+		print("WARNING: Player position unchanged for 600+ frames during walk")
+	end
 
 	if STREAMING_MODE then
 		local newSeconds = Memory.value("time", "seconds")
 		if newSeconds ~= oldSeconds and (newSeconds > 0 or Memory.value("time", "frames") > 0) then
 			Bridge.time(Utils.elapsedTime())
 			oldSeconds = newSeconds
+		end
+		if PAINT_ON then
+			Paint.draw(currentMap)
 		end
 	elseif PAINT_ON then
 		Paint.draw(currentMap)

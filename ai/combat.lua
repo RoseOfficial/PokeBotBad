@@ -8,6 +8,7 @@ local Memory = require "util.memory"
 local Utils = require "util.utils"
 
 local Pokemon = require "storage.pokemon"
+local Constants = require "util.constants"
 
 local damageMultiplier = { -- http://bulbapedia.bulbagarden.net/wiki/Type_chart#Generation_I
 	normal   = {normal=1.0, fighting=1.0, flying=1.0, poison=1.0, ground=1.0, rock=0.5, bug=1.0, ghost=0.0, fire=1.0, water=1.0, grass=1.0, electric=1.0, psychic=1.0, ice=1.0, dragon=1.0, },
@@ -78,7 +79,7 @@ local function calcDamage(move, attacker, defender, rng)
 	end
 	if move.power > 9000 then
 		if xAccuracy() and defender.speed < attacker.speed then
-			return 9001, 9001
+			return Constants.OVER_9000, Constants.OVER_9000
 		end
 		return 0, 0
 	end
@@ -114,7 +115,7 @@ local function calcDamage(move, attacker, defender, rng)
 	if rng then
 		return damage, damage
 	end
-	return floor(damage * 217 / 255), damage
+	return floor(damage * Constants.MIN_DAMAGE_RATIO), damage
 end
 
 local function getOpponentType(ty)
@@ -189,7 +190,7 @@ local function modPlayerStats(user, enemy, move)
 end
 
 local function calcBestHit(attacker, defender, ours, rng)
-	local bestTurns, bestMinTurns = 9001, 9001
+	local bestTurns, bestMinTurns = Constants.OVER_9000, Constants.OVER_9000
 	local bestDmg = -1
 	local ourMaxHit
 	local targetHP = defender.hp
@@ -200,7 +201,7 @@ local function calcBestHit(attacker, defender, ours, rng)
 			if maxDmg then
 				local minTurns, maxTurns
 				if maxDmg <= 0 then
-					minTurns, maxTurns = 9001, 9001
+					minTurns, maxTurns = Constants.OVER_9000, Constants.OVER_9000
 				else
 					minTurns = math.ceil(targetHP / maxDmg)
 					maxTurns = math.ceil(targetHP / minDmg)
@@ -210,9 +211,11 @@ local function calcBestHit(attacker, defender, ours, rng)
 					if not ret or minTurns < bestMinTurns or maxTurns < bestTurns then
 						replaces = true
 					elseif maxTurns == bestTurns and move.name == "Thrash" then
-						replaces = targetHP == Memory.double("battle", "opponent_max_hp") --TODO battle turn 0
+						local battleStart = targetHP == Memory.double("battle", "opponent_max_hp") or Memory.value("battle", "battle_turns") == 0
+						replaces = battleStart
 					elseif maxTurns == bestTurns and ret.name == "Thrash" then
-						replaces = targetHP ~= Memory.double("battle", "opponent_max_hp")
+						local battleStart = targetHP == Memory.double("battle", "opponent_max_hp") or Memory.value("battle", "battle_turns") == 0
+						replaces = not battleStart
 					elseif move.fast and not ret.fast then
 						if move.multiple then
 							replaces = targetHP <= maxDmg * 0.49
@@ -225,7 +228,7 @@ local function calcBestHit(attacker, defender, ours, rng)
 						replaces = targetHP <= maxDmg * 0.5
 					elseif conservePP then
 						if allowDamageRange then
-							local isMetapod = attacker.id == 124
+							local isMetapod = attacker.id == Constants.METAPOD_ID
 							if not isMetapod or maxTurns <= 2 then
 								if ret.name == "Horn-Attack" then
 									local weightedDmg = (minDmg + maxDmg * 2) / 3
@@ -376,7 +379,7 @@ function Combat.maxHP()
 end
 
 function Combat.redHP()
-	return math.ceil(Combat.maxHP() * 0.2)
+	return math.ceil(Combat.maxHP() * Constants.RED_BAR_FRACTION)
 end
 
 function Combat.inRedBar()
