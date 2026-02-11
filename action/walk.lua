@@ -74,6 +74,10 @@ function Walk.reset()
 	walkStuckFrames = 0
 end
 
+function Walk.resetStuck()
+	walkStuckFrames = 0
+end
+
 function Walk.isStuck()
 	local px, py = Player.position()
 	if px == lastWalkX and py == lastWalkY then

@@ -138,13 +138,13 @@ local function getOurType(ty)
 	if ty ~= 0 then
 		t1 = types[Memory.value("battle", "our_type2")]
 		if not t1 then
-			return Memory.value("battle", "opponent_type2")
+			return Memory.value("battle", "our_type2")
 		end
 	end
 	if t1 then
 		return t1
 	end
-	return Memory.value("battle", "opponent_type1")
+	return Memory.value("battle", "our_type1")
 end
 Combat.getOurType = getOurType
 
@@ -189,6 +189,65 @@ local function modPlayerStats(user, enemy, move)
 	return user, enemy
 end
 
+local function isBattleStart(targetHP)
+	return targetHP == Memory.double("battle", "opponent_max_hp") or Memory.value("battle", "battle_turns") == 0
+end
+
+local function shouldReplaceMove(move, ret, minTurns, maxTurns, minDmg, maxDmg, bestMinTurns, bestTurns, bestDmg, targetHP, attacker)
+	-- 1. No current best, or strictly fewer turns to kill
+	if not ret or minTurns < bestMinTurns or maxTurns < bestTurns then
+		return true
+	end
+	-- 2. Thrash: prefer at battle start, avoid mid-battle
+	if maxTurns == bestTurns and move.name == "Thrash" then
+		return isBattleStart(targetHP)
+	end
+	if maxTurns == bestTurns and ret.name == "Thrash" then
+		return not isBattleStart(targetHP)
+	end
+	-- 3. Fast move preference (Quick Attack etc.)
+	if move.fast and not ret.fast then
+		if move.multiple then
+			return targetHP <= maxDmg * 0.49
+		end
+		return maxTurns <= bestTurns
+	end
+	if ret.fast then
+		return maxTurns < bestTurns
+	end
+	-- 4. Multi-hit vs inaccurate move
+	if move.multiple and ret.accuracy < 100 then
+		return targetHP <= maxDmg * 0.5
+	end
+	-- 5. PP conservation mode
+	if conservePP then
+		if allowDamageRange then
+			local isMetapod = attacker.id == Constants.METAPOD_ID
+			if not isMetapod or maxTurns <= 2 then
+				if ret.name == "Horn-Attack" then
+					local weightedDmg = (minDmg + maxDmg * 2) / 3
+					local weightedTurns = math.ceil(targetHP / weightedDmg)
+					return weightedTurns <= bestTurns
+				elseif move.name == "Horn-Attack" then
+					return maxTurns < bestMinTurns
+				end
+			end
+			return false
+		end
+		if maxTurns < 2 or maxTurns == bestMinTurns then
+			if ret.name == "Earthquake" and (move.name == "Ice-Beam" or move.name == "Thunderbolt") then
+				return true
+			end
+			if move.pp > ret.pp then
+				return ret.name == "Horn-Drill" or move.name ~= "Earthquake"
+			end
+		end
+		return false
+	end
+	-- 6. Damage tiebreaker
+	return minDmg > bestDmg
+end
+
 local function calcBestHit(attacker, defender, ours, rng)
 	local bestTurns, bestMinTurns = Constants.OVER_9000, Constants.OVER_9000
 	local bestDmg = -1
@@ -207,52 +266,7 @@ local function calcBestHit(attacker, defender, ours, rng)
 					maxTurns = math.ceil(targetHP / minDmg)
 				end
 				if ours then
-					local replaces
-					if not ret or minTurns < bestMinTurns or maxTurns < bestTurns then
-						replaces = true
-					elseif maxTurns == bestTurns and move.name == "Thrash" then
-						local battleStart = targetHP == Memory.double("battle", "opponent_max_hp") or Memory.value("battle", "battle_turns") == 0
-						replaces = battleStart
-					elseif maxTurns == bestTurns and ret.name == "Thrash" then
-						local battleStart = targetHP == Memory.double("battle", "opponent_max_hp") or Memory.value("battle", "battle_turns") == 0
-						replaces = not battleStart
-					elseif move.fast and not ret.fast then
-						if move.multiple then
-							replaces = targetHP <= maxDmg * 0.49
-						else
-							replaces = maxTurns <= bestTurns
-						end
-					elseif ret.fast then
-						replaces = maxTurns < bestTurns
-					elseif move.multiple and ret.accuracy < 100 then
-						replaces = targetHP <= maxDmg * 0.5
-					elseif conservePP then
-						if allowDamageRange then
-							local isMetapod = attacker.id == Constants.METAPOD_ID
-							if not isMetapod or maxTurns <= 2 then
-								if ret.name == "Horn-Attack" then
-									local weightedDmg = (minDmg + maxDmg * 2) / 3
-									local weightedTurns = math.ceil(targetHP / weightedDmg)
-									replaces = weightedTurns <= bestTurns
-								elseif move.name == "Horn-Attack" then
-									replaces = maxTurns < bestMinTurns
-								end
-							end
-						elseif maxTurns < 2 or maxTurns == bestMinTurns then
-							if ret.name == "Earthquake" and (move.name == "Ice-Beam" or move.name == "Thunderbolt") then
-								replaces = true
-							elseif move.pp > ret.pp then
-								if ret.name == "Horn-Drill" then
-									replaces = true
-								elseif move.name ~= "Earthquake" then
-									replaces = true
-								end
-							end
-						end
-					elseif minDmg > bestDmg then
-						replaces = true
-					end
-					if replaces then
+					if shouldReplaceMove(move, ret, minTurns, maxTurns, minDmg, maxDmg, bestMinTurns, bestTurns, bestDmg, targetHP, attacker) then
 						ret = move
 						bestMinTurns = minTurns
 						bestTurns = maxTurns

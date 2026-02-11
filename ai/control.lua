@@ -326,73 +326,81 @@ function Control.encounters()
 	return encounters
 end
 
+local function handleBattleStatus()
+	local isCritical
+	if Menu.onBattleSelect() then
+		isCritical = false
+		Control.missed = false
+	elseif Memory.double("battle", "our_hp") == 0 then
+		if Memory.value("battle", "critical") == 1 then
+			isCritical = true
+		end
+	elseif not Control.missed then
+		local turnMarker = Memory.value("battle", "our_turn")
+		if turnMarker == 100 or turnMarker == 128 then
+			if Memory.value("battle", "miss") == 1 then
+				if not Control.ignoreMiss and Battle.accurateAttack and not Combat.sandAttacked() then
+					local exclaim = Strategies.deepRun and ";_; " or ""
+					Bridge.chat("gen 1 missed "..exclaim.."(1 in 256 chance)")
+				end
+				Control.missed = true
+				Data.increment("misses")
+			end
+		end
+	end
+	if isCritical ~= nil and isCritical ~= Control.criticaled then
+		Control.criticaled = isCritical
+		Data.increment("criticals")
+	end
+end
+
+local function handleWildEncounterStart()
+	Control.killedCatch = false
+	Control.inBattle = true
+	encounters = encounters + 1
+	Paint.wildEncounters(encounters)
+	Bridge.encounter()
+	Data.increment("encounters")
+	if encountersSection then
+		Data.increment(encountersSection)
+		local opponent = Battle.opponent()
+		if opponent == "zubat" then
+			Data.run.encounters_zubat = Data.increment("encounters_zubat")
+			Bridge.chat("NightBat", true)
+		elseif opponent == "rattata" then
+			Data.run.encounters_rattata = Data.increment("encounters_rattata")
+		end
+	end
+end
+
+local catchTargets = {"pidgey", "spearow", "paras", "oddish"}
+
+local function handleKilledCatch()
+	if not shouldCatch or Control.killedCatch then return end
+	if Battle.opponentAlive() then return end
+	local opponent = Battle.opponent()
+	for __,catch in ipairs(catchTargets) do
+		if opponent == catch then
+			if not Pokemon.inParty(catch) then
+				local criticaled = Memory.value("battle", "critical") == 1
+				Bridge.chat("accidentally killed "..Utils.capitalize(catch).." with a "..(criticaled and "critical" or "high damage range").." :(")
+				Control.killedCatch = true
+			end
+			break
+		end
+	end
+end
+
 function Control.encounter(battleState)
 	if battleState > 0 then
-		local wildBattle = battleState == 1
-		local isCritical
-		if Menu.onBattleSelect() then
-			isCritical = false
-			Control.missed = false
-		elseif Memory.double("battle", "our_hp") == 0 then
-			if Memory.value("battle", "critical") == 1 then
-				isCritical = true
-			end
-		elseif not Control.missed then
-			local turnMarker = Memory.value("battle", "our_turn")
-			if turnMarker == 100 or turnMarker == 128 then
-				if Memory.value("battle", "miss") == 1 then
-					if not Control.ignoreMiss and Battle.accurateAttack and not Combat.sandAttacked() then
-						local exclaim = Strategies.deepRun and ";_; " or ""
-						Bridge.chat("gen 1 missed "..exclaim.."(1 in 256 chance)")
-					end
-					Control.missed = true
-					Data.increment("misses")
-				end
-			end
-		end
-		if isCritical ~= nil and isCritical ~= Control.criticaled then
-			Control.criticaled = isCritical
-			Data.increment("criticals")
-		end
-		if wildBattle then
-			local opponentAlive = Battle.opponentAlive()
+		handleBattleStatus()
+		if battleState == 1 then
 			if not Control.inBattle then
-				if opponentAlive then
-					Control.killedCatch = false
-					Control.inBattle = true
-					encounters = encounters + 1
-					Paint.wildEncounters(encounters)
-					Bridge.encounter()
-					Data.increment("encounters")
-					if encountersSection then
-						Data.increment(encountersSection)
-
-						local opponent = Battle.opponent()
-						if opponent == "zubat" then
-							local zubatCount = Data.increment("encounters_zubat")
-							Data.run.encounters_zubat = zubatCount
-							Bridge.chat("NightBat", true)
-
-						elseif opponent == "rattata" then
-							Data.run.encounters_rattata = Data.increment("encounters_rattata")
-						end
-					end
+				if Battle.opponentAlive() then
+					handleWildEncounterStart()
 				end
 			else
-				if not opponentAlive and shouldCatch and not Control.killedCatch then
-					local gottaCatchEm = {"pidgey", "spearow", "paras", "oddish"}
-					local opponent = Battle.opponent()
-					for __,catch in ipairs(gottaCatchEm) do
-						if opponent == catch then
-							if not Pokemon.inParty(catch) then
-								local criticaled = Memory.value("battle", "critical") == 1
-								Bridge.chat("accidentally killed "..Utils.capitalize(catch).." with a "..(criticaled and "critical" or "high damage range").." :(")
-								Control.killedCatch = true
-							end
-							break
-						end
-					end
-				end
+				handleKilledCatch()
 			end
 		end
 	elseif Control.inBattle then

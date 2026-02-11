@@ -187,7 +187,10 @@ while true do
 		generateNextInput(currentMap)
 	end
 	-- Stuck detection: warn if player position hasn't changed during walk
-	if Walk.strategy and Walk.isStuck() then
+	-- Skip during battles since position naturally doesn't change while fighting
+	if Memory.value("game", "battle") > 0 then
+		Walk.resetStuck()
+	elseif Walk.strategy and Walk.isStuck() then
 		print("WARNING: Player position unchanged for 600+ frames during walk")
 	end
 

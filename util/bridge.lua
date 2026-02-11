@@ -10,6 +10,7 @@ local Constants = require "util.constants"
 
 local client = nil
 local timeStopped = true
+local timePaused = false
 local timeMin = 0
 local timeFrames = 0
 
@@ -24,10 +25,8 @@ local function send(prefix, body)
 		local bytes, err = client:send(message.."\n")
 		if not bytes then
 			print("Bridge send error: "..tostring(err))
-			if err == "closed" or err == "Transport endpoint is not connected" then
-				client = nil
-				Bridge.reconnect()
-			end
+			client = nil
+			Bridge.reconnect()
 		end
 		return bytes ~= nil
 	end
@@ -84,14 +83,22 @@ end
 
 function Bridge.reconnect()
 	if not gameName then return false end
-	print("Attempting to reconnect to LiveSplit...")
-	client = attemptConnect()
-	if client then
-		print("Reconnected to LiveSplit!")
-		send("init,"..gameName)
-		return true
+	local delay = Constants.BRIDGE_RETRY_DELAY
+	for attempt = 1, Constants.BRIDGE_RETRY_ATTEMPTS do
+		print("Reconnect attempt "..attempt.."/"..Constants.BRIDGE_RETRY_ATTEMPTS.."...")
+		client = attemptConnect()
+		if client then
+			print("Reconnected to LiveSplit!")
+			send("init,"..gameName)
+			return true
+		end
+		if attempt < Constants.BRIDGE_RETRY_ATTEMPTS then
+			local waitUntil = os.clock() + delay
+			while os.clock() < waitUntil do end
+			delay = delay * 2
+		end
 	end
-	print("Reconnection failed.")
+	print("Reconnection failed after "..Constants.BRIDGE_RETRY_ATTEMPTS.." attempts.")
 	return false
 end
 
@@ -128,7 +135,10 @@ function Bridge.time()
 			end
 		end
 
-		send("unpausegametime")
+		if timePaused then
+			send("unpausegametime")
+			timePaused = false
+		end
 	end
 end
 
@@ -166,6 +176,7 @@ function Bridge.encounter() end
 function Bridge.liveSplit()
 	send("initgametime")
 	send("pausegametime")
+	timePaused = true
 	send("starttimer")
 	timeStopped = false
 end
@@ -180,6 +191,7 @@ end
 
 function Bridge.pausegametime()
 	send("pausegametime")
+	timePaused = true
 end
 
 function Bridge.report(report)
@@ -208,6 +220,7 @@ end
 function Bridge.reset()
 	send("reset")
 	timeStopped = false
+	timePaused = false
 end
 
 function Bridge.close()

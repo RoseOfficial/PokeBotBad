@@ -145,14 +145,27 @@ function Memory.string(first, last)
 end
 
 function Memory.double(section, key)
-	local first = doubleNames[section][key]
+	local sectionTable = doubleNames[section]
+	if not sectionTable then
+		error("Memory.double: unknown section '"..tostring(section).."'", 2)
+	end
+	local first = sectionTable[key]
+	if not first then
+		error("Memory.double: unknown key '"..tostring(key).."' in section '"..section.."'", 2)
+	end
 	return raw(first) + raw(first + 1)
 end
 
 function Memory.value(section, key, forYellow)
 	local memoryAddress = memoryNames[section]
+	if not memoryAddress then
+		error("Memory.value: unknown section '"..tostring(section).."'", 2)
+	end
 	if key then
 		memoryAddress = memoryAddress[key]
+		if not memoryAddress then
+			error("Memory.value: unknown key '"..tostring(key).."' in section '"..section.."'", 2)
+		end
 	end
 	return raw(memoryAddress, forYellow)
 end
