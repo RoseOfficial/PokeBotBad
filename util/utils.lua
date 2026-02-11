@@ -12,12 +12,13 @@ local splitNum = 1
 -- GLOBAL
 
 function p(...)
+	local args = {...}
 	local string
-	if #arg == 0 then
-		string = arg[0]
+	if #args == 0 then
+		string = ""
 	else
 		string = ""
-		for __,str in ipairs(arg) do
+		for __,str in ipairs(args) do
 			if str == true then
 				string = string.."\n"
 			else
@@ -201,7 +202,7 @@ end
 
 function Utils.splitCheck()
 	local order = { "bulbasaur", "nidoran", "brock", "route3", "mt_moon", "mankey", "misty", "trash", "safari_carbos", "safari_carbos" , "safari_carbos", "victory_road", "victory_road", "victory_road", "victory_road", "victory_road", "e4center", "blue", "blue", "blue", "champion", "champion" }
-	if splitCheck == 600 then
+	if splitCheck == Constants.SPLIT_CHECK_INTERVAL then
 		local timediff = Utils.timeToSplit(order[splitNum])
 		if timediff >= 600 then
 			p("Something has gone wrong, Restarting... /n")

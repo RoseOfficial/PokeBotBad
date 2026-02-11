@@ -157,10 +157,6 @@ function Walk.traverse(region)
 	return newIndex
 end
 
-function Walk.canMove()
-	return Memory.value("player", "moving") == 0 and Memory.value("player", "fighting") == 0
-end
-
 -- Custom path
 
 function Walk.invertCustom(silent)

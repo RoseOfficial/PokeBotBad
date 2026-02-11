@@ -443,7 +443,8 @@ function Strategies.isPrepared(...)
 	if not status.preparing then
 		return false
 	end
-	for __,name in ipairs(arg) do
+	local args = {...}
+	for __,name in ipairs(args) do
 		local currentCount = Inventory.count(name)
 		if currentCount > 0 then
 			local previousCount = status.preparing[name]
@@ -460,7 +461,8 @@ function Strategies.prepare(...)
 		status.preparing = {}
 	end
 	local item
-	for __,name in ipairs(arg) do
+	local args = {...}
+	for __,name in ipairs(args) do
 		local currentCount = Inventory.count(name)
 		local needsItem = currentCount > 0
 		local previousCount = status.preparing[name]

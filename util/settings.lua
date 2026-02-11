@@ -48,7 +48,8 @@ end
 -- PUBLIC
 
 function Settings.set(...)
-	for __,name in ipairs(arg) do
+	local args = {...}
+	for __,name in ipairs(args) do
 		if not isEnabled(name) then
 			if Menu.open(settings_menu, 1) then
 				Menu.setOption(name, desired[name])

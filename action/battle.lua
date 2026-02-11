@@ -78,7 +78,7 @@ local function openBattleMenu()
 	end
 	local battleMenu = Memory.value("battle", "menu")
 	local col = Menu.getCol()
-	if battleMenu == 106 or (battleMenu == 94 and col == 5) then
+	if battleMenu == Constants.BATTLE_MENU_ATTACK_SELECT or (battleMenu == Constants.BATTLE_MENU_READY and col == 5) then
 		return true
 	elseif Menu.onBattleSelect(battleMenu) then
 		local rowSelected = Memory.value("menu", "row")

@@ -22,7 +22,7 @@ local function getIndexForLetter(letter)
 end
 
 function Textbox.name(letter, randomize)
-	local inputting = Memory.value("menu", "text_input") == 240
+	local inputting = Memory.value("menu", "text_input") == Constants.TEXT_INPUT_ACTIVE
 	if inputting then
 		if Memory.value("menu", "text_length") > 0 then
 			Input.press("Start")

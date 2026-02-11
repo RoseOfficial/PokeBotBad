@@ -15,8 +15,8 @@ AFTER_BROCK_SPEED = config.AFTER_BROCK_SPEED or 1500
 AFTER_MOON_SPEED = config.AFTER_MOON_SPEED or 500
 E4_SPEED = config.E4_SPEED or 200
 
-RESET_LOG = config.RESET_LOG or "./wiki/red/resets.txt"
-VICTORY_LOG = config.VICTORY_LOG or "./wiki/red/victories.txt"
+local CONFIG_RESET_LOG = config.RESET_LOG
+local CONFIG_VICTORY_LOG = config.VICTORY_LOG
 
 local CUSTOM_SEED  = config.CUSTOM_SEED
 local NIDORAN_NAME = config.NIDORAN_NAME or "A"
@@ -31,6 +31,9 @@ CURRENT_SPEED = nil
 local Data = require "data.data"
 
 Data.init()
+
+RESET_LOG = CONFIG_RESET_LOG or ("./wiki/"..Data.gameName.."/resets.txt")
+VICTORY_LOG = CONFIG_VICTORY_LOG or ("./wiki/"..Data.gameName.."/victories.txt")
 
 local Battle = require "action.battle"
 local Textbox = require "action.textbox"

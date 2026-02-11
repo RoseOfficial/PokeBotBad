@@ -120,14 +120,15 @@ local function index(index, offset)
 	local address = getAddress(index) + offset
 	local value = Memory.raw(address)
 	if double then
-		value = value + Memory.raw(address + 1)
+		value = value * 256 + Memory.raw(address + 1)
 	end
 	return value
 end
 Pokemon.index = index
 
 local function indexOf(...)
-	for __,name in ipairs(arg) do
+	local args = {...}
+	for __,name in ipairs(args) do
 		local pid = pokeIDs[name]
 		for i=0,5 do
 			local atIdx = index(i)
@@ -224,7 +225,8 @@ function Pokemon.getName(id)
 end
 
 function Pokemon.getSacrifice(...)
-	for __,name in ipairs(arg) do
+	local args = {...}
+	for __,name in ipairs(args) do
 		local pokemonIndex = indexOf(name)
 		if pokemonIndex ~= -1 and index(pokemonIndex, "hp") > 0 then
 			return name
@@ -233,7 +235,8 @@ function Pokemon.getSacrifice(...)
 end
 
 function Pokemon.inParty(...)
-	for __,name in ipairs(arg) do
+	local args = {...}
+	for __,name in ipairs(args) do
 		if indexOf(name) ~= -1 then
 			return name
 		end
@@ -277,7 +280,8 @@ end
 
 function Pokemon.isOpponent(...)
 	local oid = Memory.value("battle", "opponent_id")
-	for __,name in ipairs(arg) do
+	local args = {...}
+	for __,name in ipairs(args) do
 		if oid == pokeIDs[name] then
 			return name
 		end
@@ -286,7 +290,8 @@ end
 
 function Pokemon.isDeployed(...)
 	local deployedID = Memory.value("battle", "our_id")
-	for __,name in ipairs(arg) do
+	local args = {...}
+	for __,name in ipairs(args) do
 		if deployedID == pokeIDs[name] then
 			return name
 		end

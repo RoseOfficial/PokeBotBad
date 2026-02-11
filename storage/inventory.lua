@@ -82,7 +82,8 @@ function Inventory.count(name)
 end
 
 function Inventory.contains(...)
-	for __,name in ipairs(arg) do
+	local args = {...}
+	for __,name in ipairs(args) do
 		if Inventory.count(name) > 0 then
 			return name
 		end
@@ -90,7 +91,8 @@ function Inventory.contains(...)
 end
 
 function Inventory.containsAll(...)
-	for __,name in ipairs(arg) do
+	local args = {...}
+	for __,name in ipairs(args) do
 		if not Inventory.contains(name) then
 			return false
 		end

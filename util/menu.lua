@@ -12,7 +12,7 @@ local yellow = Data.yellow
 local sliding = false
 local alternateStart = 0
 
-Menu.pokemon = yellow and 51 or 103
+Menu.pokemon = yellow and Constants.POKEMON_MENU_YELLOW or Constants.POKEMON_MENU_RED
 
 -- PRIVATE
 

@@ -50,12 +50,13 @@ end
 -- Wrapper functions
 
 local function attemptConnect()
-	local c = socket.connect("localhost", Constants.BRIDGE_PORT)
+	local c, err = socket.connect("localhost", Constants.BRIDGE_PORT)
 	if c then
 		c:settimeout(Constants.BRIDGE_TIMEOUT)
 		c:setoption("keepalive", true)
 		return c
 	end
+	print("Bridge connect failed: "..tostring(err))
 	return nil
 end
 
@@ -115,7 +116,7 @@ function Bridge.reconnect()
 end
 
 function Bridge.chatRandom(...)
-	return Bridge.chat(Utils.random(arg))
+	return Bridge.chat(Utils.random({...}))
 end
 
 function Bridge.chat(message, suppressed, extra, newLine)
@@ -136,15 +137,11 @@ function Bridge.time()
 		local minutes = memory.raw(Constants.TIME_MINUTES_ADDR)
 		local hours = memory.raw(Constants.TIME_HOURS_ADDR)
 
-		if (frames == timeFrames) then
+		if frames ~= timeFrames then
+			timeFrames = frames
 			local seconds2 = seconds + (frames / 60)
 			local message = hours..":"..minutes..":"..seconds2
 			send("setgametime", message)
-			if timeFrames == 59 then
-				timeFrames = 0
-			else
-				timeFrames = (frames + 1)
-			end
 		end
 
 		if timePaused then

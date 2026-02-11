@@ -153,7 +153,7 @@ function Memory.double(section, key)
 	if not first then
 		error("Memory.double: unknown key '"..tostring(key).."' in section '"..section.."'", 2)
 	end
-	return raw(first) + raw(first + 1)
+	return raw(first) * 256 + raw(first + 1)
 end
 
 function Memory.value(section, key, forYellow)

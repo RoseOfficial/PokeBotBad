@@ -118,33 +118,22 @@ local function calcDamage(move, attacker, defender, rng)
 	return floor(damage * Constants.MIN_DAMAGE_RATIO), damage
 end
 
-local function getOpponentType(ty)
-	local t1 = types[Memory.value("battle", "opponent_type1")]
+local function getType(prefix, ty)
+	local key1 = prefix.."type1"
+	local key2 = prefix.."type2"
 	if ty ~= 0 then
-		t1 = types[Memory.value("battle", "opponent_type2")]
-		if not t1 then
-			return Memory.value("battle", "opponent_type2")
-		end
+		return types[Memory.value("battle", key2)] or "normal"
 	end
-	if t1 then
-		return t1
-	end
-	return Memory.value("battle", "opponent_type1")
+	return types[Memory.value("battle", key1)] or "normal"
+end
+
+local function getOpponentType(ty)
+	return getType("opponent_", ty)
 end
 Combat.getOpponentType = getOpponentType
 
 local function getOurType(ty)
-	local t1 = types[Memory.value("battle", "our_type1")]
-	if ty ~= 0 then
-		t1 = types[Memory.value("battle", "our_type2")]
-		if not t1 then
-			return Memory.value("battle", "our_type2")
-		end
-	end
-	if t1 then
-		return t1
-	end
-	return Memory.value("battle", "our_type1")
+	return getType("our_", ty)
 end
 Combat.getOurType = getOurType
 

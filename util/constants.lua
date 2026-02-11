@@ -56,6 +56,14 @@ Constants.YELLOW_OPTIONS_ADDR = 0x0D3D
 -- Memory: Inventory
 Constants.ITEM_BASE_ADDR = 0x131E
 
+-- Battle menu state values
+Constants.BATTLE_MENU_READY = 94         -- battle menu is interactable
+Constants.BATTLE_MENU_ATTACK_SELECT = 106 -- attack selection is open
+Constants.TEXT_INPUT_ACTIVE = 240         -- naming/text input screen active
+Constants.POKEMON_MENU_YELLOW = 51       -- pokemon menu identifier (Yellow)
+Constants.POKEMON_MENU_RED = 103         -- pokemon menu identifier (Red)
+Constants.SPLIT_CHECK_INTERVAL = 600     -- frames between split time checks
+
 -- Gameplay thresholds
 Constants.POTION_TOPOFF_MARGIN = 49
 Constants.SUPER_POTION_HEAL = 50
