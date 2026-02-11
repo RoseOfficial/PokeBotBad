@@ -81,6 +81,17 @@ function Bridge.init(name)
 	end
 end
 
+local function restoreTimerState()
+	if not timeStopped then
+		send("initgametime")
+		send("starttimer")
+		if timePaused then
+			send("pausegametime")
+		end
+		print("Bridge: restored timer state (stopped="..tostring(timeStopped)..", paused="..tostring(timePaused)..")")
+	end
+end
+
 function Bridge.reconnect()
 	if not gameName then return false end
 	local delay = Constants.BRIDGE_RETRY_DELAY
@@ -90,6 +101,7 @@ function Bridge.reconnect()
 		if client then
 			print("Reconnected to LiveSplit!")
 			send("init,"..gameName)
+			restoreTimerState()
 			return true
 		end
 		if attempt < Constants.BRIDGE_RETRY_ATTEMPTS then
@@ -119,10 +131,10 @@ end
 
 function Bridge.time()
 	if (not timeStopped) then
-		local frames = memory.raw(0x1A45)
-		local seconds = memory.raw(0x1A44)
-		local minutes = memory.raw(0x1A43)
-		local hours = memory.raw(0x1A41)
+		local frames = memory.raw(Constants.TIME_FRAMES_ADDR)
+		local seconds = memory.raw(Constants.TIME_SECONDS_ADDR)
+		local minutes = memory.raw(Constants.TIME_MINUTES_ADDR)
+		local hours = memory.raw(Constants.TIME_HOURS_ADDR)
 
 		if (frames == timeFrames) then
 			local seconds2 = seconds + (frames / 60)

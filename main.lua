@@ -169,12 +169,13 @@ end
 
 while true do
 	local currentMap = Memory.value("game", "map")
+	local battleState = Memory.value("game", "battle")
 	if currentMap ~= previousMap then
 		Input.clear()
 		previousMap = currentMap
 	end
 	if Strategies.frames then
-		if Memory.value("game", "battle") == 0 then
+		if battleState == 0 then
 			Strategies.frames = Strategies.frames + 1
 		end
 		Utils.drawText(0, 80, Strategies.frames)
@@ -188,7 +189,7 @@ while true do
 	end
 	-- Stuck detection: warn if player position hasn't changed during walk
 	-- Skip during battles since position naturally doesn't change while fighting
-	if Memory.value("game", "battle") > 0 then
+	if battleState > 0 then
 		Walk.resetStuck()
 	elseif Walk.strategy and Walk.isStuck() then
 		print("WARNING: Player position unchanged for 600+ frames during walk")

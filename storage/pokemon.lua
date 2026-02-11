@@ -4,6 +4,7 @@ local Bridge = require "util.bridge"
 local Input = require "util.input"
 local Memory = require "util.memory"
 local Menu = require "util.menu"
+local Constants = require "util.constants"
 
 local pokeIDs = {
 	rhydon = 1,
@@ -179,7 +180,7 @@ end
 function Pokemon.battleMove(name)
 	local mid = moveList[name]
 	for i=1,4 do
-		if mid == Memory.raw(0x101B + i) then
+		if mid == Memory.raw(Constants.OUR_BATTLE_MOVES_BASE + i) then
 			return i
 		end
 	end
@@ -301,9 +302,9 @@ function Pokemon.isEvolving()
 end
 
 function Pokemon.getExp()
-	local experience = Memory.raw(0x1179) * 256
-	experience = (experience + Memory.raw(0x117A)) * 256
-	return experience + Memory.raw(0x117B)
+	local experience = Memory.raw(Constants.EXP_ADDR_HIGH) * 256
+	experience = (experience + Memory.raw(Constants.EXP_ADDR_MID)) * 256
+	return experience + Memory.raw(Constants.EXP_ADDR_LOW)
 end
 
 function Pokemon.getExpForLevelFromCurrent(levelups)

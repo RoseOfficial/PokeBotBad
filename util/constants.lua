@@ -21,4 +21,47 @@ Constants.BRIDGE_RETRY_ATTEMPTS = 3
 Constants.BRIDGE_RETRY_DELAY = 1         -- seconds
 Constants.BRIDGE_TIMEOUT = 0.050         -- seconds (socket timeout)
 
+-- Memory: In-game time registers (read via Memory.raw)
+Constants.TIME_FRAMES_ADDR = 0x1A45
+Constants.TIME_SECONDS_ADDR = 0x1A44
+Constants.TIME_MINUTES_ADDR = 0x1A43
+Constants.TIME_HOURS_ADDR = 0x1A41
+
+-- Memory: Battle system addresses
+Constants.OPPONENT_MOVES_BASE = 0x0FED
+Constants.OUR_MOVES_BASE = 0x101C
+Constants.OUR_BATTLE_MOVES_BASE = 0x101B  -- 1-indexed: 0x101B + moveIndex
+Constants.OUR_PP_BASE = 0x102D
+Constants.OUR_PP_BATTLE_BASE = 0x102C     -- 1-indexed: 0x102C + moveIndex
+Constants.MOVE_COUNT_ADDR = 0x101F
+Constants.SLEEP_STATUS_ADDR = 0x116F
+Constants.CONFUSION_ADDR = 0x106B
+Constants.FREEZE_STATUS_ADDR = 0x0FE9    -- Yellow-specific freeze check
+Constants.EXP_ADDR_HIGH = 0x1179
+Constants.EXP_ADDR_MID = 0x117A
+Constants.EXP_ADDR_LOW = 0x117B
+
+-- Memory: NPC/player positions
+Constants.NPC_X_ADDR = 0x0223
+Constants.NPC_Y_ADDR = 0x0222
+Constants.NPC_SPRITE_ADDR = 0x0242       -- Red-specific NPC sprite position
+
+-- Memory: Menu/UI state
+Constants.NAMING_SCREEN_ADDR = 0x10B7
+Constants.TEXT_ACCEPT_ADDR = 0x0C3A      -- Yellow text input acceptance
+Constants.INGAME_STATE_ADDR = 0x020E
+Constants.YELLOW_START_MENU_ADDR = 0x0F95
+Constants.YELLOW_OPTIONS_ADDR = 0x0D3D
+
+-- Memory: Inventory
+Constants.ITEM_BASE_ADDR = 0x131E
+
+-- Gameplay thresholds
+Constants.POTION_TOPOFF_MARGIN = 49
+Constants.SUPER_POTION_HEAL = 50
+Constants.POTION_HEAL = 20
+Constants.EVOLUTION_TIMEOUT_FRAMES = 3600
+Constants.VICTORY_TIMEOUT_FRAMES = 1800
+Constants.CHAMPION_MENU_VALUE = 252
+
 return Constants

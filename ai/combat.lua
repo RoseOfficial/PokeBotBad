@@ -152,9 +152,9 @@ local function getMoves(who)--Get the moveset of us [0] or them [1]
 	local moves = {}
 	local base
 	if who == 1 then
-		base = 0x0FED
+		base = Constants.OPPONENT_MOVES_BASE
 	else
-		base = 0x101C
+		base = Constants.OUR_MOVES_BASE
 	end
 	for idx=0, 3 do
 		local val = Memory.raw(base + idx)
@@ -162,7 +162,7 @@ local function getMoves(who)--Get the moveset of us [0] or them [1]
 			local moveTable = Movelist.get(val)
 			if moveTable then
 				if who == 0 then
-					moveTable.pp = Memory.raw(0x102D + idx)
+					moveTable.pp = Memory.raw(Constants.OUR_PP_BASE + idx)
 				end
 				moves[idx + 1] = moveTable
 			else
@@ -370,11 +370,11 @@ function Combat.isParalyzed(target)
 end
 
 function Combat.isSleeping(target)
-	return Memory.raw(0x116F) > 0 and not Combat.isParalyzed(target)
+	return Memory.raw(Constants.SLEEP_STATUS_ADDR) > 0 and not Combat.isParalyzed(target)
 end
 
 local function isConfused()
-	return Memory.raw(0x106B) > 0
+	return Memory.raw(Constants.CONFUSION_ADDR) > 0
 end
 Combat.isConfused = isConfused
 
@@ -508,7 +508,7 @@ function Combat.enemyAttack()
 end
 
 function Combat.updateHP(curr_hp)
-	local expChange = Memory.raw(0x117B)
+	local expChange = Memory.raw(Constants.EXP_ADDR_LOW)
 	if curr_hp ~= lastHP or expChange ~= lastExp then
 		local max_hp = Combat.maxHP()
 		if max_hp < curr_hp then

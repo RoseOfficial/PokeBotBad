@@ -19,6 +19,7 @@ local Utils = require "util.utils"
 
 local Inventory = require "storage.inventory"
 local Pokemon = require "storage.pokemon"
+local Constants = require "util.constants"
 
 local riskGiovanni
 
@@ -1157,7 +1158,7 @@ end
 
 strategyFunctions.dodgeDepartment = function()
 	if Strategies.initialize() then
-		status.startPosition = Memory.raw(0x0242)
+		status.startPosition = Memory.raw(Constants.NPC_SPRITE_ADDR)
 	end
 	local px, py = Player.position()
 	local dx, dy = px, py

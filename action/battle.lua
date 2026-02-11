@@ -12,6 +12,7 @@ local Utils = require "util.utils"
 
 local Inventory = require "storage.inventory"
 local Pokemon = require "storage.pokemon"
+local Constants = require "util.constants"
 
 -- HELPERS
 
@@ -108,7 +109,7 @@ local function movePP(name)
 	if not midx then
 		return 0
 	end
-	return Memory.raw(0x102C + midx)
+	return Memory.raw(Constants.OUR_PP_BATTLE_BASE + midx)
 end
 Battle.pp = movePP
 
@@ -128,7 +129,7 @@ function Battle.swapMove(move, toIndex)
 		else
 			swapSelect = toIndex
 		end
-		local menuSize = Memory.raw(0x101F) == 0 and 3 or 4
+		local menuSize = Memory.raw(Constants.MOVE_COUNT_ADDR) == 0 and 3 or 4
 		if Menu.select(swapSelect, true, false, nil, true, menuSize) then
 			Input.press("Select")
 		end

@@ -19,6 +19,7 @@ local Utils = require "util.utils"
 
 local Inventory = require "storage.inventory"
 local Pokemon = require "storage.pokemon"
+local Constants = require "util.constants"
 
 local status = Strategies.status
 local stats = Strategies.stats
@@ -338,7 +339,7 @@ local function takeCenter(pp, startMap, entranceX, entranceY, finishX)
 			if py > 5 then
 				dy = 5
 			elseif px < 13 then
-				local cx, cy = Memory.raw(0x0223) + 2, Memory.raw(0x0222) - 3
+				local cx, cy = Memory.raw(Constants.NPC_X_ADDR) + 2, Memory.raw(Constants.NPC_Y_ADDR) - 3
 				if currentMap == 64 and cx == px + 1 and cy == py then
 					if py == 4 then
 						dy = 5
@@ -359,7 +360,7 @@ local function takeCenter(pp, startMap, entranceX, entranceY, finishX)
 			end
 			if px ~= 3 then
 				if Menu.close() then
-					local cx, cy = Memory.raw(0x0223) + 2, Memory.raw(0x0222) - 3
+					local cx, cy = Memory.raw(Constants.NPC_X_ADDR) + 2, Memory.raw(Constants.NPC_Y_ADDR) - 3
 					if currentMap == 64 and cx == px - 1 and cy == py then
 						if py == 4 then
 							dy = 5
@@ -728,7 +729,7 @@ strategyFunctions.acquireCharmander = function()
 	end
 	if Textbox.isActive() then
 		if Menu.getCol() == 15 then
-			local accept = Memory.raw(0x0C3A) == 239
+			local accept = Memory.raw(Constants.TEXT_ACCEPT_ADDR) == 239
 			Input.press(accept and "A" or "B")
 		else
 			Input.cancel()
@@ -1427,7 +1428,7 @@ strategyFunctions.blue = function()
 		local forced, xItem
 		local opponentName = Battle.opponent()
 		if opponentName == "sandslash" then
-			if Memory.raw(0x0FE9) == 32 then
+			if Memory.raw(Constants.FREEZE_STATUS_ADDR) == 32 then
 				Strategies.chat("froze", "froze Sandslash Kreygasm Finishing setup now...")
 				if Strategies.isPrepared("x_speed") or Strategies.isPrepared("x_special") then
 					xItem = "x_accuracy"

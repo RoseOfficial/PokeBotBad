@@ -5,6 +5,7 @@ local Memory = require "util.memory"
 local Menu = require "util.menu"
 
 local Pokemon = require "storage.pokemon"
+local Constants = require "util.constants"
 
 local items = {
 	pokeball = 4,
@@ -54,7 +55,7 @@ local items = {
 	rock_slide = 248,
 }
 
-local ITEM_BASE = 0x131E
+local ITEM_BASE = Constants.ITEM_BASE_ADDR
 
 -- Data
 

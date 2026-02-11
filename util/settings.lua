@@ -9,6 +9,7 @@ local Bridge = require "util.bridge"
 local Input = require "util.input"
 local Memory = require "util.memory"
 local Menu = require "util.menu"
+local Constants = require "util.constants"
 
 local START_WAIT = 99
 
@@ -64,7 +65,7 @@ function Settings.startNewAdventure()
 		withBattleStyle = "battle_style"
 	end
 	if Data.yellow then
-		startMenu = Memory.raw(0x0F95) == 0
+		startMenu = Memory.raw(Constants.YELLOW_START_MENU_ADDR) == 0
 	else
 		startMenu = Memory.value("player", "name") ~= 0
 	end

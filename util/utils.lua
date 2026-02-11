@@ -1,6 +1,7 @@
 local Utils = {}
 
 local Memory = require "util.memory"
+local Constants = require "util.constants"
 local Strategies
 local Data = require "data.data"
 
@@ -124,17 +125,17 @@ function Utils.canPotionWith(potion, forDamage, curr_hp, max_hp)
 	end
 	local potion_hp
 	if potion == "full_restore" then
-		potion_hp = 9001
+		potion_hp = Constants.OVER_9000
 	elseif potion == "super_potion" then
-		potion_hp = 50
+		potion_hp = Constants.SUPER_POTION_HEAL
 	else
-		potion_hp = 20
+		potion_hp = Constants.POTION_HEAL
 	end
 	return math.min(curr_hp + potion_hp, max_hp) > forDamage
 end
 
 function Utils.ingame()
-	return Memory.raw(0x020E) > 0
+	return Memory.raw(Constants.INGAME_STATE_ADDR) > 0
 end
 
 function Utils.drawText(x, y, message, right)

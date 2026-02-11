@@ -21,6 +21,18 @@ local customDir = 1
 local lastWalkX, lastWalkY
 local walkStuckFrames = 0
 
+-- Region index: map region → list of path indices (built once at load)
+local regionIndex = {}
+for i, p in ipairs(Paths) do
+	if i > 2 then
+		local region = p[1]
+		if not regionIndex[region] then
+			regionIndex[region] = {}
+		end
+		table.insert(regionIndex[region], i)
+	end
+end
+
 -- Private functions
 
 local function setPath(index, region)
@@ -98,17 +110,21 @@ function Walk.init()
 	if region == 0 and px == 0 and py == 0 then
 		return false
 	end
-	for tries=1,2 do
-		for i,p in ipairs(Paths) do
-			if i > 2 and p[1] == region then
-				local origin = p[2]
-				if tries == 2 or (origin[1] == px and origin[2] == py) then
-					setPath(i, region)
-					return tries == 1
-				end
-			end
+
+	local indices = regionIndex[region]
+	if not indices then return false end
+
+	-- Pass 1: exact position match
+	for _, i in ipairs(indices) do
+		local origin = Paths[i][2]
+		if origin[1] == px and origin[2] == py then
+			setPath(i, region)
+			return true
 		end
 	end
+	-- Pass 2: any match in region (fallback)
+	setPath(indices[1], region)
+	return false
 end
 
 function Walk.traverse(region)

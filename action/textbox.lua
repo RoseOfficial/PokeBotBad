@@ -3,6 +3,7 @@ local Textbox = {}
 local Input = require "util.input"
 local Memory = require "util.memory"
 local Menu = require "util.menu"
+local Constants = require "util.constants"
 
 local Data = require "data.data"
 
@@ -46,7 +47,7 @@ function Textbox.name(letter, randomize)
 	else
 		-- TODO cancel when menu isn't up
 		-- if Memory.value("menu", "current") == 7 then
-		if Memory.raw(0x10B7) == 3 then
+		if Memory.raw(Constants.NAMING_SCREEN_ADDR) == 3 then
 			Input.press("A", 2)
 		elseif randomize then
 			Input.press("A", math.random(1, 5))

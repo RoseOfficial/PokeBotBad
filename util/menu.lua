@@ -5,6 +5,7 @@ local Data = require "data.data"
 local Input = require "util.input"
 local Memory = require "util.memory"
 local Utils = require "util.utils"
+local Constants = require "util.constants"
 
 local yellow = Data.yellow
 
@@ -151,7 +152,7 @@ function Menu.setOption(name, desired)
 			battle_animation = 1,
 			battle_style = 2
 		}
-		local currentRow = Memory.raw(0x0D3D, true)
+		local currentRow = Memory.raw(Constants.YELLOW_OPTIONS_ADDR, true)
 		if Menu.balance(currentRow, rowFor[name], true, false, true) then
 			Input.press("Left")
 		end
