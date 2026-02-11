@@ -13,11 +13,12 @@ local timeStopped = true
 local timePaused = false
 local timeMin = 0
 local timeFrames = 0
+local reconnecting = false
 
 local gameName = nil
 
 local function send(prefix, body)
-	if client then
+	if client and not reconnecting then
 		local message = prefix
 		if body then
 			message = message.." "..body
@@ -26,19 +27,23 @@ local function send(prefix, body)
 		if not bytes then
 			print("Bridge send error: "..tostring(err))
 			client = nil
+			reconnecting = true
 			Bridge.reconnect()
+			reconnecting = false
 		end
 		return bytes ~= nil
 	end
 end
 
 local function readln()
-	if client then
+	if client and not reconnecting then
 		local s, status, partial = client:receive("*l")
 		if status == "closed" then
 			print("Bridge: connection closed by server")
 			client = nil
+			reconnecting = true
 			Bridge.reconnect()
+			reconnecting = false
 			return nil
 		end
 		if s and s ~= "" then
@@ -108,7 +113,7 @@ function Bridge.reconnect()
 		if attempt < Constants.BRIDGE_RETRY_ATTEMPTS then
 			local waitUntil = os.clock() + delay
 			while os.clock() < waitUntil do end
-			delay = delay * 2
+			delay = math.min(delay * 2, Constants.BRIDGE_MAX_DELAY)
 		end
 	end
 	print("Reconnection failed after "..Constants.BRIDGE_RETRY_ATTEMPTS.." attempts.")

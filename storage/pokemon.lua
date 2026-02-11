@@ -105,7 +105,7 @@ local data = {
 local previousPartySize
 
 local function getAddress(index)
-	return 0x116B + index * 0x2C
+	return Constants.PARTY_BASE_ADDR + index * Constants.PARTY_SLOT_STRIDE
 end
 
 local function index(index, offset)

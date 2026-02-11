@@ -155,7 +155,7 @@ local function getMoves(who)--Get the moveset of us [0] or them [1]
 				end
 				moves[idx + 1] = moveTable
 			else
-				p("ERR: Invalid move index", idx)
+				p("ERR: Unknown move ID", val, "at slot", idx)
 			end
 		end
 	end
@@ -215,6 +215,7 @@ local function shouldReplaceMove(move, ret, minTurns, maxTurns, minDmg, maxDmg, 
 			if not isMetapod or maxTurns <= 2 then
 				if ret.name == "Horn-Attack" then
 					local weightedDmg = (minDmg + maxDmg * 2) / 3
+					if weightedDmg <= 0 then return false end
 					local weightedTurns = math.ceil(targetHP / weightedDmg)
 					return weightedTurns <= bestTurns
 				elseif move.name == "Horn-Attack" then
@@ -346,7 +347,7 @@ function Combat.isPoisoned(target)
 	return checkStatus(target, 0x8)
 end
 
-function Combat.hasParalyzeStatus()
+function Combat.isParalyzedInBattle()
 	return Memory.value("battle", "paralyzed") > 0
 end
 

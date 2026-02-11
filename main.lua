@@ -48,6 +48,7 @@ local Pokemon = require "storage.pokemon"
 local Bridge = require "util.bridge"
 local Input = require "util.input"
 local Memory = require "util.memory"
+local Menu = require "util.menu"
 local Paint = require "util.paint"
 local Utils = require "util.utils"
 local Settings = require "util.settings"
@@ -191,8 +192,8 @@ while true do
 		generateNextInput(currentMap)
 	end
 	-- Stuck detection: warn if player position hasn't changed during walk
-	-- Skip during battles since position naturally doesn't change while fighting
-	if battleState > 0 then
+	-- Skip during battles, menus, and textboxes since position naturally doesn't change
+	if battleState > 0 or Menu.isOpened() or Textbox.isActive() then
 		Walk.resetStuck()
 	elseif Walk.strategy and Walk.isStuck() then
 		print("WARNING: Player position unchanged for 600+ frames during walk")

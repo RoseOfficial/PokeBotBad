@@ -11,13 +11,11 @@ local Memory = require "util.memory"
 local Menu = require "util.menu"
 local Constants = require "util.constants"
 
-local START_WAIT = 99
-
 local settings_menu
 if Data.yellow then
-	settings_menu = 93
+	settings_menu = Constants.SETTINGS_MENU_YELLOW
 else
-	settings_menu = 94
+	settings_menu = Constants.SETTINGS_MENU_RED
 end
 
 local desired = {}
@@ -34,9 +32,9 @@ end
 local function isEnabled(name)
 	if Data.yellow then
 		local matching = {
-			text_speed = 0xF,
-			battle_animation = 0x80,
-			battle_style = 0x40
+			text_speed = Constants.YELLOW_TEXT_SPEED_MASK,
+			battle_animation = Constants.YELLOW_ANIMATION_MASK,
+			battle_style = Constants.YELLOW_BATTLE_STYLE_MASK
 		}
 		local settingMask = Memory.value("setting", "yellow_bitmask", true)
 		return bit.band(settingMask, matching[name]) == desired[name]
@@ -74,7 +72,7 @@ function Settings.startNewAdventure()
 		if Settings.set("text_speed", "battle_animation", withBattleStyle) then
 			Menu.select(0)
 		end
-	elseif math.random(0, START_WAIT) == 0 then
+	elseif math.random(0, Constants.START_WAIT) == 0 then
 		Input.press("Start", 2)
 	end
 end

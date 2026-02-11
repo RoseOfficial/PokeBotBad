@@ -18,7 +18,8 @@ Constants.METAPOD_ID = 124
 -- Bridge connection
 Constants.BRIDGE_PORT = 16834
 Constants.BRIDGE_RETRY_ATTEMPTS = 3
-Constants.BRIDGE_RETRY_DELAY = 1         -- seconds
+Constants.BRIDGE_RETRY_DELAY = 0.5       -- seconds (initial delay between retries)
+Constants.BRIDGE_MAX_DELAY = 2           -- seconds (cap for exponential backoff)
 Constants.BRIDGE_TIMEOUT = 0.050         -- seconds (socket timeout)
 
 -- Memory: In-game time registers (read via Memory.raw)
@@ -63,6 +64,25 @@ Constants.TEXT_INPUT_ACTIVE = 240         -- naming/text input screen active
 Constants.POKEMON_MENU_YELLOW = 51       -- pokemon menu identifier (Yellow)
 Constants.POKEMON_MENU_RED = 103         -- pokemon menu identifier (Red)
 Constants.SPLIT_CHECK_INTERVAL = 600     -- frames between split time checks
+
+-- Game detection (used in data.lua with direct memory.readbyte — not via Memory.raw)
+Constants.TITLE_TEXT_ADDR = 0x0447
+Constants.YELLOW_DOMAIN_SIZE_THRESHOLD = 30000
+
+-- Party data structure
+Constants.PARTY_BASE_ADDR = 0x116B
+Constants.PARTY_SLOT_STRIDE = 0x2C
+
+-- Settings
+Constants.START_WAIT = 99
+Constants.SETTINGS_MENU_YELLOW = 93
+Constants.SETTINGS_MENU_RED = 94
+Constants.YELLOW_TEXT_SPEED_MASK = 0xF
+Constants.YELLOW_ANIMATION_MASK = 0x80
+Constants.YELLOW_BATTLE_STYLE_MASK = 0x40
+
+-- NPC dodge addresses
+Constants.DODGE_OLD_MAN_ADDR = 0x0273
 
 -- Gameplay thresholds
 Constants.POTION_TOPOFF_MARGIN = 49

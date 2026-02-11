@@ -68,7 +68,7 @@ function Strategies.hardReset(reason, message, extra, wait)
 		end
 	end
 
-	local seed = Data.run.seed
+	local seed = tostring(Data.run.seed or "unknown")
 	local newmessage = message.." | "..seed
 
 	local f, err
@@ -2305,7 +2305,7 @@ function Strategies.execute(data)
 	local strategyFunction = strategyFunctions[data.s]
 	if not strategyFunction then
 		p("INVALID STRATEGY", data.s, Data.gameName)
-		return true
+		return Strategies.reset("error", "Invalid strategy '"..tostring(data.s).."'") or nil
 	end
 
 	-- Stuck detection: track frames spent in current strategy

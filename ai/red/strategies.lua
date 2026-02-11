@@ -387,7 +387,7 @@ end
 -- 2: NIDORAN
 
 strategyFunctions.dodgeViridianOldMan = function()
-	return Strategies.dodgeUp(0x0273, 18, 6, 17, 9)
+	return Strategies.dodgeUp(Constants.DODGE_OLD_MAN_ADDR, 18, 6, 17, 9)
 end
 
 strategyFunctions.grabTreePotion = function()

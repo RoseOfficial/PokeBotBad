@@ -1,10 +1,12 @@
 local Data = {}
 
+local Constants = require "util.constants"
+
 -- INIT
 
 local function hasNido()
 	for idx=0, 5 do
-		local pokeID = memory.readbyte(0x116B + idx * 0x2C)
+		local pokeID = memory.readbyte(Constants.PARTY_BASE_ADDR + idx * Constants.PARTY_SLOT_STRIDE)
 		if pokeID == 3 or pokeID == 167 or pokeID == 7 then
 			return true
 		end
@@ -21,11 +23,11 @@ function Data.init()
 		end
 	end
 
-	local yellowVersion = memory.getcurrentmemorydomainsize() > 30000
+	local yellowVersion = memory.getcurrentmemorydomainsize() > Constants.YELLOW_DOMAIN_SIZE_THRESHOLD
 	local gameName = "yellow"
 	if not yellowVersion then
 		gameName = "red"
-		local titleText = memory.readbyte(0x0447)
+		local titleText = memory.readbyte(Constants.TITLE_TEXT_ADDR)
 		if titleText == 96 or titleText == 97 then
 			if titleText == 97 then
 				gameName = "blue"

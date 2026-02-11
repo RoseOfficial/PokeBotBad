@@ -1096,7 +1096,7 @@ end
 
 strategyFunctions.fightBlaine = function()
 	if Strategies.trainerBattle() then
-		if Combat.hasParalyzeStatus() then
+		if Combat.isParalyzedInBattle() then
 			if Inventory.contains("full_restore") then
 				Strategies.chat("status_recover", "got Burned by Flamethrower. Attempting to recover with a Full Restore...")
 				Inventory.use("full_restore", nil, true)
@@ -1279,7 +1279,7 @@ end
 
 strategyFunctions.bruno = function()
 	if Strategies.trainerBattle() then
-		if Combat.hasParalyzeStatus() then
+		if Combat.isParalyzedInBattle() then
 			if Inventory.contains("full_restore") then
 				Strategies.chat("status_recover", "is attempting to recover from Hitmonchan's status change with a Full Restore...")
 				Inventory.use("full_restore", nil, true)
