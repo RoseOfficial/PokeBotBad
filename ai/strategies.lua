@@ -21,6 +21,7 @@ local json = require "external.json"
 local Inventory = require "storage.inventory"
 local Pokemon = require "storage.pokemon"
 local Constants = require "util.constants"
+local Analytics = require "util.analytics"
 
 local splitNumber, splitTime = 0, 0
 local resetting
@@ -84,6 +85,21 @@ function Strategies.hardReset(reason, message, extra, wait)
 	else
 		f:write(newmessage.."\n")
 		f:close()
+	end
+
+	if reason ~= "won" then
+		Analytics.onReset({
+			area = Control.areaName,
+			time = Utils.elapsedTime(),
+			reasonCode = reason,
+			reasonText = message,
+			seed = Data.run.seed,
+		})
+	else
+		Analytics.onVictory({
+			time = Utils.elapsedTime(),
+			seed = Data.run.seed,
+		})
 	end
 
 	local map, px, py = Memory.value("game", "map"), Player.position()

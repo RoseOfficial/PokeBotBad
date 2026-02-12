@@ -52,6 +52,7 @@ local Menu = require "util.menu"
 local Paint = require "util.paint"
 local Utils = require "util.utils"
 local Settings = require "util.settings"
+local Analytics = require "util.analytics"
 
 local hasAlreadyStartedPlaying = false
 local oldSeconds
@@ -65,7 +66,6 @@ function resetAll()
 	Combat.reset()
 	Control.reset()
 	Walk.reset()
-	Paint.reset()
 	Bridge.reset()
 	Utils.reset()
 	oldSeconds = 0
@@ -117,7 +117,7 @@ else
 	end
 end
 
-
+Analytics.init(RESET_LOG, VICTORY_LOG)
 
 -- LOOP
 

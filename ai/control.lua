@@ -9,7 +9,6 @@ local Data = require "data.data"
 local Bridge = require "util.bridge"
 local Memory = require "util.memory"
 local Menu = require "util.menu"
-local Paint = require "util.paint"
 local Utils = require "util.utils"
 
 local Inventory = require "storage.inventory"
@@ -358,7 +357,6 @@ local function handleWildEncounterStart()
 	Control.killedCatch = false
 	Control.inBattle = true
 	encounters = encounters + 1
-	Paint.wildEncounters(encounters)
 	Bridge.encounter()
 	Data.increment("encounters")
 	if encountersSection then

@@ -5,7 +5,7 @@ local Constants = require "util.constants"
 local Strategies
 local Data = require "data.data"
 
-local EMP = 1
+local EMP = 18
 local splitCheck = 0
 local splitNum = 1
 

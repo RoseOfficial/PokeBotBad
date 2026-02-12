@@ -92,4 +92,7 @@ Constants.EVOLUTION_TIMEOUT_FRAMES = 3600
 Constants.VICTORY_TIMEOUT_FRAMES = 1800
 Constants.CHAMPION_MENU_VALUE = 252
 
+-- Analytics
+Constants.ANALYTICS_SUMMARY_INTERVAL = 50
+
 return Constants
