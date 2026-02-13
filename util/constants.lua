@@ -97,6 +97,54 @@ Constants.PACE_CARRY_FACTOR = 0.5       -- How much surplus carries forward (0=n
 Constants.PACE_MAX_BONUS_SECONDS = 60   -- Max seconds a checkpoint can gain from surplus
 Constants.PACE_MIN_LIMIT_FACTOR = 0.85  -- Floor: never tighten past 85% of base limit
 
+-- Per-checkpoint pace tuning (overrides flat constants above)
+Constants.CHECKPOINT_PACE = {
+	bulbasaur     = { carry = 0.3, floor = 0.90 },  -- short, deterministic
+	nidoran       = { carry = 0.2, floor = 0.80 },  -- high RNG variance
+	old_man       = { carry = 0.5, floor = 0.85 },
+	forest        = { carry = 0.5, floor = 0.85 },
+	brock         = { carry = 0.6, floor = 0.85 },  -- deterministic
+	shorts        = { carry = 0.5, floor = 0.85 },
+	route3        = { carry = 0.5, floor = 0.85 },
+	mt_moon       = { carry = 0.3, floor = 0.80 },  -- HIGH variance
+	mankey        = { carry = 0.5, floor = 0.85 },
+	bills         = { carry = 0.5, floor = 0.85 },
+	misty         = { carry = 0.5, floor = 0.85 },
+	vermilion     = { carry = 0.5, floor = 0.85 },
+	trash         = { carry = 0.3, floor = 0.80 },  -- high variance trashcans
+	safari_carbos = { carry = 0.5, floor = 0.85 },
+	victory_road  = { carry = 0.6, floor = 0.90 },  -- late game
+	e4center      = { carry = 0.6, floor = 0.90 },
+	blue          = { carry = 0.7, floor = 0.90 },
+	champion      = { carry = 0.7, floor = 0.90 },
+}
+
+-- Area name -> timeRequirements key mapping (for checkpoint reset tracking)
+Constants.AREA_TO_CHECKPOINT = {
+	["Pallet Rival"]    = "bulbasaur",
+	["Nidoran grass"]   = "nidoran",
+	["Tree Potion"]     = "old_man",
+	["Viridian Forest"] = "forest",
+	["Brock's Gym"]     = "brock",
+	["Pewter City"]     = "shorts",
+	["Mt. Moon"]        = "mt_moon",
+	["Cerulean"]        = "mankey",
+	["Cerulean Rival"]  = "bills",
+	["Misty's Gym"]     = "misty",
+	["Vermilion City"]  = "vermilion",
+	["Surge's Gym"]     = "trash",
+	["Safari Zone"]     = "safari_carbos",
+	["Victory Road"]    = "victory_road",
+	["Elite Four"]      = "e4center",
+	["Blue"]            = "blue",
+	["Champion"]        = "champion",
+}
+
+-- Analytics-driven threshold tuning
+Constants.THRESHOLD_TARGET_RESET_RATE = 0.25  -- ideal time-reset rate per checkpoint
+Constants.THRESHOLD_MAX_ADJUSTMENT = 0.10     -- max +/- 10% from base
+Constants.THRESHOLD_MIN_SAMPLES = 5           -- min time-resets before adjusting
+
 -- Analytics
 Constants.ANALYTICS_SUMMARY_INTERVAL = 50
 Constants.ANALYTICS_MIN_RUNS_FOR_STRATEGY_DISPLAY = 10

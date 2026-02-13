@@ -35,6 +35,13 @@ local splits = {
 	pbSplitsPath = nil, -- file path for saving/loading
 }
 
+-- Internal state: per-checkpoint reset tracking (for threshold tuning)
+local checkpointStats = {
+	timeResets = {},       -- checkpoint -> count of time-based resets
+	totalResets = {},      -- checkpoint -> count of all resets at that area
+	adjustments = {},      -- checkpoint -> computed multiplier (0.9-1.1)
+}
+
 -- Helpers
 
 local function findPlain(str, substr)
@@ -162,6 +169,14 @@ local function parseLogs(resetPath, victoryPath)
 				if reason then
 					increment(allTime.resetReasons, classifyReasonFromText(reason))
 				end
+				-- Track per-checkpoint reset stats for threshold tuning
+				local checkpoint = Constants.AREA_TO_CHECKPOINT[area]
+				if checkpoint then
+					increment(checkpointStats.totalResets, checkpoint)
+					if reason and findPlain(reason:lower(), "took too long") then
+						increment(checkpointStats.timeResets, checkpoint)
+					end
+				end
 			elseif line:match("%S") then
 				allTime.parseWarnings = allTime.parseWarnings + 1
 			end
@@ -230,6 +245,34 @@ local function savePBSplits(path, splitData)
 	f:close()
 end
 
+-- Threshold tuning: compute per-checkpoint adjustments from historical reset rates
+
+local function computeThresholdAdjustments()
+	for checkpoint, timeCount in pairs(checkpointStats.timeResets) do
+		if timeCount >= Constants.THRESHOLD_MIN_SAMPLES then
+			local total = checkpointStats.totalResets[checkpoint] or timeCount
+			local timeResetRate = timeCount / total
+
+			-- Asymmetric dampened adjustment:
+			-- Loosen 1.5x faster than tighten (killing a potential PB costs more
+			-- than wasting time on a slow run). Square root dampens noise from
+			-- small sample sizes — prevents overreacting to a few unlucky resets.
+			local target = Constants.THRESHOLD_TARGET_RESET_RATE
+			local maxAdj = Constants.THRESHOLD_MAX_ADJUSTMENT
+			local deviation = timeResetRate - target
+			local normalized = math.abs(deviation) / target
+			local magnitude = math.sqrt(normalized) * maxAdj
+			if deviation > 0 then
+				-- Too tight: loosen aggressively
+				magnitude = magnitude * 1.5
+			end
+			local sign = deviation >= 0 and 1 or -1
+			local adjustment = 1.0 + sign * math.min(magnitude, maxAdj)
+			checkpointStats.adjustments[checkpoint] = adjustment
+		end
+	end
+end
+
 -- Public API
 
 function Analytics.init(resetLogPath, victoryLogPath, pbSplitsPath)
@@ -249,6 +292,17 @@ function Analytics.init(resetLogPath, victoryLogPath, pbSplitsPath)
 	p("Analytics loaded: "..totalRuns.." runs, "..allTime.victories.." victories, PB: "..pbStr.." ("..splitCount.." PB splits)", true)
 	if allTime.parseWarnings > 0 then
 		p("Analytics: "..allTime.parseWarnings.." lines skipped during log parsing", true)
+	end
+
+	-- Compute threshold adjustments from historical data
+	computeThresholdAdjustments()
+	local adjCount = 0
+	for checkpoint, adj in pairs(checkpointStats.adjustments) do
+		adjCount = adjCount + 1
+		p("Threshold adjustment: "..checkpoint.." = "..string.format("%.3f", adj), true)
+	end
+	if adjCount > 0 then
+		p("Analytics: "..adjCount.." checkpoint threshold adjustments computed", true)
 	end
 end
 
@@ -538,6 +592,40 @@ function Analytics.summary()
 	end
 
 	p("====================", true)
+end
+
+function Analytics.getThresholdAdjustment(checkpointName)
+	return checkpointStats.adjustments[checkpointName]
+end
+
+-- Run viability scoring: estimate PB probability from current pace
+
+function Analytics.computeViability(checkpointName, currentIGT)
+	if not splits.pbFinish or splits.latestSplit == 0 then return nil end
+
+	-- Find the PB split time closest to current run position
+	local pbSplitTime = nil
+	for num, data in pairs(splits.pbSplits) do
+		if splits.currentSplits[num] and data.igt then
+			pbSplitTime = data.igt
+		end
+	end
+	if not pbSplitTime then return nil end
+
+	local timeAhead = pbSplitTime - currentIGT  -- positive = ahead of PB
+	local pbRemaining = splits.pbFinish - pbSplitTime
+
+	-- Sigmoid viability curve: ratio = timeAhead / pbRemaining
+	-- Steepness 8 gives useful spread across the run:
+	--   Mt. Moon 2min behind:  ratio=-0.023, score=0.45 (recoverable)
+	--   V. Road 2min behind:   ratio=-0.12,  score=0.28 (unlikely)
+	--   V. Road 30s behind:    ratio=-0.03,  score=0.44 (still possible)
+	-- Being exactly on PB pace = 50% (generous — matching your best ever
+	-- is harder than it sounds, but the sigmoid naturally drops from there).
+	if pbRemaining <= 0 then return nil end
+	local ratio = timeAhead / pbRemaining
+	local score = 1.0 / (1.0 + math.exp(-8 * ratio))
+	return math.max(0.0, math.min(1.0, score))
 end
 
 return Analytics

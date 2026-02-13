@@ -34,6 +34,12 @@ local paceState = {
 	pendingSurplus = 0,
 }
 
+-- Run viability tracking
+local viabilityState = {
+	score = nil,       -- 0.0-1.0, nil = unknown
+	checkpoint = nil,  -- name of last checkpoint where computed
+}
+
 local status = {tries = 0, canProgress = nil, initialized = false}
 local stats = {}
 Strategies.status = status
@@ -58,10 +64,23 @@ local function getPaceAdjustedLimit(name)
 		return baseMinutes
 	end
 
-	local bonus = paceState.surplus * Constants.PACE_CARRY_FACTOR
+	-- Per-checkpoint or fallback to global defaults
+	local cpPace = Constants.CHECKPOINT_PACE[name]
+	local carryFactor = cpPace and cpPace.carry or Constants.PACE_CARRY_FACTOR
+	local floorFactor = cpPace and cpPace.floor or Constants.PACE_MIN_LIMIT_FACTOR
+
+	-- Analytics-driven adjustment (historical reset rate tuning)
+	if ANALYTICS_DRIVEN_RESETS then
+		local adj = Analytics.getThresholdAdjustment(name)
+		if adj then
+			baseMinutes = baseMinutes * adj
+		end
+	end
+
+	local bonus = paceState.surplus * carryFactor
 	local maxBonus = Constants.PACE_MAX_BONUS_SECONDS / 60
 	bonus = math.min(bonus, maxBonus)
-	local floor = baseMinutes * Constants.PACE_MIN_LIMIT_FACTOR
+	local floor = baseMinutes * floorFactor
 	return math.max(floor, baseMinutes + bonus)
 end
 
@@ -234,6 +253,18 @@ function Strategies.setYolo(name, forced)
 		if PACE_AWARE_RESETS and RESET_FOR_TIME and not paceState.passedCheckpoints[name] then
 			paceState.passedCheckpoints[name] = true
 			paceState.surplus = minimumTime - Utils.igt() / 60
+		end
+		-- Compute run viability at checkpoint boundary
+		viabilityState.score = Analytics.computeViability(name, Utils.igt())
+		viabilityState.checkpoint = name
+		if viabilityState.score then
+			Bridge.chat("PB viability: "..math.floor(viabilityState.score * 100).."%", true)
+		end
+		-- Optional: reset on very low viability
+		if VIABILITY_RESET_THRESHOLD and viabilityState.score
+		   and viabilityState.score < VIABILITY_RESET_THRESHOLD
+		   and not Control.yolo then
+			return Strategies.reset("time", "Low PB viability ("..math.floor(viabilityState.score * 100).."%)")
 		end
 		local shouldYolo = BEAST_MODE or Strategies.overMinute(minimumTime)
 		if Control.yolo ~= shouldYolo then
@@ -2345,6 +2376,10 @@ function Strategies.getPaceSurplus()
 	return paceState.surplus
 end
 
+function Strategies.getViabilityScore()
+	return viabilityState.score
+end
+
 function Strategies.execute(data)
 	local strategyFunction = strategyFunctions[data.s]
 	if not strategyFunction then
@@ -2375,6 +2410,9 @@ function Strategies.execute(data)
 				paceState.passedCheckpoints[paceState.pendingCheckpoint] = true
 				paceState.surplus = paceState.pendingSurplus
 			end
+			-- Compute viability at resetTime()-style checkpoints
+			viabilityState.score = Analytics.computeViability(paceState.pendingCheckpoint, Utils.igt())
+			viabilityState.checkpoint = paceState.pendingCheckpoint
 			paceState.pendingCheckpoint = nil
 		end
 		status = {tries=0}
@@ -2438,6 +2476,7 @@ function Strategies.softReset()
 	strategyFrameCount = 0
 	lastStrategyName = nil
 	paceState = { surplus = 0, passedCheckpoints = {}, pendingCheckpoint = nil, pendingSurplus = 0 }
+	viabilityState = { score = nil, checkpoint = nil }
 	Strategies.deepRun = false
 	Analytics.resetSplits()
 	Strategies.resetGame()

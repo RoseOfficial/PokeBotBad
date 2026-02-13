@@ -53,7 +53,16 @@ function Paint.draw(currentMap)
 		y = y + LINE
 	end
 
-	-- Line 6: Run count, win rate, PB (compact)
+	-- Line 6: Viability score
+	if PACE_AWARE_RESETS and RESET_FOR_TIME then
+		local viability = Strategies.getViabilityScore()
+		if viability then
+			drawText(0, y, "PB: "..math.floor(viability * 100).."%")
+		end
+		y = y + LINE
+	end
+
+	-- Line 7: Run count, win rate, PB (compact)
 	local displayStats = Analytics.getDisplayStats()
 	if displayStats then
 		drawText(0, y, "#"..displayStats.totalRuns.." | "..displayStats.winRate.." win | PB "..displayStats.pb)

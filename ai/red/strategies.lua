@@ -1638,7 +1638,9 @@ strategyFunctions.viridianRival = function()
 	end
 end
 
--- checkEther
+strategyFunctions.checkEther = function()
+	return true
+end
 
 -- ether
 
