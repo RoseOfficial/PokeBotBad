@@ -345,7 +345,7 @@ local Paths = {
 	-- Fly home
 	{7, {27,28}, {s="fly",dest="pallet",map=0}},
 	-- Pallet to Cinnabar
-	--TODO: Combine Rare Candy + Carbos into single menu open to save ~30 frames
+	--TODO combine RC for Carbos
 	{0, {5,6}, {s="item",item="super_repel",chain=true}, {s="item",item="rare_candy",poke="nidoking",all=true,chain=true}, {s="bicycle"}, {c="allowDeath",on=false}, {3,6}, {s="dodgeGirl"}, {3,17}, {s="skill",move="surf",dir="Right",x=4}, {4,18}},
 	-- To Cinnabar
 	{32, {4,0}, {4,14}, {3,14}, {3,90}},
@@ -360,7 +360,7 @@ local Paths = {
 	-- F1 drop
 	{165, {16,14}, {16,16}, {13,16}, {13,20}, {s="cinnabarCarbos"}, {21,23}},
 	-- B1
-	--TODO: Add menu cancel optimization after Rare Candy use to save menu close frames
+	--TODO menu cancel for RC
 	{216, {23,22}, {23,15}, {21,15}, {s="item",item="super_repel",chain=true}, {s="item",item="carbos",poke="nidoking"}, {17,15}, {17,19}, {18,19}, {18,23}, {17,23}, {17,26}, {18,26}, {s="dialogue",dir="Up"}, {14,26}, {14,22}, {12,22}, {12,15}, {24,15}, {24,18}, {26,18}, {26,6}, {24,6}, {24,4}, {20,4}, {s="dialogue",dir="Up"}, {24,4}, {24,6}, {12,6}, {12,2}, {11,2}, {s="take",dir="Left"}, {12,2}, {12,7}, {4,7}, {4,9}, {2,9}, {s="take",dir="Left"}, {5,9}, {5,10}, {s="teach",move="strength",poke="squirtle",replace="tackle",chain=true}, {s="item",item="rare_candy",all=true,poke="nidoking"}, {5,12}, {s="take",dir="Down"}, {5,12}, {s="skill",move="dig",map=216}},
 	-- Celadon once again
 	{6, {41,10}, {s="bicycle"}, {41,13}, {36,13}, {36,23}, {25,23}, {25,30}, {35,30}, {35,31}, {s="skill",move="cut",dir="Down",done=0x0D4D}, {35,34}, {5,34}, {5,29}, {12,29}, {12,27}},

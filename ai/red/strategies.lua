@@ -1000,7 +1000,7 @@ strategyFunctions.shopVermilionMart = function()
 	end
 	return Shop.transaction {
 		sell = sellArray,
-		buy = {{name="super_potion",index=1,amount=3}, {name="repel",index=5,amount=6}}
+		buy = {{name="super_potion",index=1,amount=3}, {name="repel",index=5,amount=3}}
 	}
 end
 
@@ -1191,7 +1191,7 @@ strategyFunctions.shopBuffs = function()
 		end
 	end
 
-	local xspecAmt = 3
+	local xspecAmt = 4
 	if riskGiovanni then
 		xspecAmt = xspecAmt + 1
 	elseif stats.nidoran.special < 46 then
@@ -1200,7 +1200,7 @@ strategyFunctions.shopBuffs = function()
 
 	return Shop.transaction {
 		direction = "Up",
-		buy = {{name="x_accuracy", index=0, amount=11}, {name="x_speed", index=5, amount=6}, {name="x_special", index=6, amount=xspecAmt}}
+		buy = {{name="x_accuracy", index=0, amount=10}, {name="x_speed", index=5, amount=4}, {name="x_special", index=6, amount=xspecAmt}}
 	}
 end
 
@@ -1739,24 +1739,24 @@ strategyFunctions.agatha = function()
 		end
 		if Pokemon.isOpponent("gengar") then
 			local curr_hp = Pokemon.info("nidoking", "hp")
-			if not Control.yolo and curr_hp <= 56 and not Strategies.isPrepared("x_special") then
+			local xItem1, xItem2
+			if not Control.yolo then
+				xItem1, xItem2 = "x_accuracy", "x_speed"
+			else
+				xItem1 = "x_speed"
+			end
+			if not Control.yolo and curr_hp <= 56 and not Strategies.isPrepared(xItem1, xItem2) then
 				local toPotion = Inventory.contains("full_restore", "super_potion")
 				if toPotion then
 					Inventory.use(toPotion, nil, true)
 					return false
 				end
 			end
-			if not Strategies.prepare("x_special") then
+			if not Strategies.prepare(xItem1, xItem2) then
 				return false
 			end
 		end
-		local forced
-		if Pokemon.isOpponent("golbat") then
-			forced = "ice_beam"
-		else
-			forced = "earthquake"
-		end
-		Battle.automate(forced)
+		Battle.automate()
 	elseif status.foughtTrainer then
 		return true
 	end
@@ -1804,7 +1804,11 @@ end
 strategyFunctions.blue = function()
 	if Strategies.trainerBattle() then
 		if Strategies.initialize() then
-			status.xItem = "x_special"
+			if stats.nidoran.specialDV >= 8 and stats.nidoran.speedDV >= 12 and Inventory.contains("x_special") then
+				status.xItem = "x_special"
+			else
+				status.xItem = "x_speed"
+			end
 		end
 
 		local boostFirst = Combat.hp() < 55
@@ -1854,6 +1858,15 @@ strategyFunctions.blue = function()
 			end
 		else
 			if Strategies.prepare(firstItem, secondItem) then
+				if Pokemon.isOpponent("alakazam") then
+					if status.xItem == "x_speed" then
+						forced = "earthquake"
+					end
+				elseif Pokemon.isOpponent("rhydon") then
+					if status.xItem == "x_special" then
+						forced = "ice_beam"
+					end
+				end
 				Battle.automate(forced)
 			end
 		end

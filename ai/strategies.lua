@@ -649,72 +649,6 @@ local function requiresMaxEther()
 	return Inventory.ppRestoreCount() < (Strategies.requiresE4Center(true, false) and 2 or 3)
 end
 
--- Potion helper: set heal target and delegate to the potion strategy
-local function healAndPotion(data, healAmount)
-	data.hp = healAmount
-	return Strategies.functions.potion(data)
-end
-
--- Nidoran stat evaluation helpers
-
-local function buildStatResetMessage(att, spd, scl, restrictiveStats)
-	if att < 15 and spd < 14 and scl < 12 then
-		return Utils.random {
-			"let's just forget this ever happened",
-			"I hate everything BibleThump ",
-			"perfect stats Kappa ",
-			"there's always the next one..",
-			"worst possible stats hype",
-			"unrunnable everything -.- "
-		}
-	end
-	local nidoranStatus = nil
-	if restrictiveStats and att == 15 and spd == 14 then
-		nidoranStatus = Utils.append(nidoranStatus, "unrunnable attack/speed combination", ", ")
-	else
-		if att < 15 then
-			nidoranStatus = Utils.append(nidoranStatus, "unrunnable attack", ", ")
-		end
-		if spd < 14 then
-			nidoranStatus = Utils.append(nidoranStatus, "unrunnable speed", ", ")
-		end
-	end
-	if scl < 12 then
-		nidoranStatus = Utils.append(nidoranStatus, "unrunnable special", ", ")
-	end
-	return nidoranStatus or "unrunnable"
-end
-
-local function rateNidoranStats(att, def, spd, scl, restrictiveStats, level4)
-	local statDiff = (16 - att) + (15 - spd) + (13 - scl)
-	if def < 12 then
-		statDiff = statDiff + 1
-	end
-	if not Data.yellow and not level4 then
-		statDiff = statDiff + 1
-	end
-
-	local superlative
-	local exclaim = "!"
-	if statDiff == 0 then
-		superlative = " perfect"
-		exclaim = "! Kreygasm"
-	elseif att == 16 and spd == 15 then
-		if statDiff == 1 then
-			superlative = " great"
-		else
-			superlative = " good"
-		end
-	elseif statDiff <= ((restrictiveStats or Data.yellow) and 3 or 4) then
-		superlative = "n okay"
-		exclaim = "."
-	else
-		superlative = " min stat"
-		exclaim = "."
-	end
-	return statDiff, superlative, exclaim
-end
-
 -- GENERALIZED STRATEGIES
 
 Strategies.functions = {
@@ -1336,14 +1270,65 @@ Strategies.functions = {
 		end
 
 		if resetsForStats then
-			local nidoranStatus = buildStatResetMessage(att, spd, scl, restrictiveStats)
+			local nidoranStatus = nil
+			if att < 15 and spd < 14 and scl < 12 then
+				nidoranStatus = Utils.random {
+					"let's just forget this ever happened",
+					"I hate everything BibleThump ",
+					"perfect stats Kappa ",
+					"there's always the next one..",
+					"worst possible stats hype",
+					"unrunnable everything -.- "
+				}
+			else
+				if restrictiveStats and att == 15 and spd == 14 then
+					nidoranStatus = Utils.append(nidoranStatus, "unrunnable attack/speed combination", ", ")
+				else
+					if att < 15 then
+						nidoranStatus = Utils.append(nidoranStatus, "unrunnable attack", ", ")
+					end
+					if spd < 14 then
+						nidoranStatus = Utils.append(nidoranStatus, "unrunnable speed", ", ")
+					end
+				end
+				if scl < 12 then
+					nidoranStatus = Utils.append(nidoranStatus, "unrunnable special", ", ")
+				end
+			end
+			if not nidoranStatus then
+				nidoranStatus = "unrunnable"
+			end
 			return Strategies.reset("stats", "Bad Nidoran - "..nidoranStatus)
 		end
 		status.tries = Constants.OVER_9000
 
-		local statDiff, superlative, exclaim = rateNidoranStats(att, def, spd, scl, restrictiveStats, level4)
+		local statDiff = (16 - att) + (15 - spd) + (13 - scl)
+		if def < 12 then
+			statDiff = statDiff + 1
+		end
+		if not Data.yellow and not stats.nidoran.level4 then
+			statDiff = statDiff + 1
+		end
 		stats.nidoran.rating = statDiff
 
+		local superlative
+		local exclaim = "!"
+		if statDiff == 0 then
+			superlative = " perfect"
+			exclaim = "! Kreygasm"
+		elseif att == 16 and spd == 15 then
+			if statDiff == 1 then
+				superlative = " great"
+			else
+				superlative = " good"
+			end
+		elseif statDiff <= ((restrictiveStats or Data.yellow) and 3 or 4) then
+			superlative = "n okay"
+			exclaim = "."
+		else
+			superlative = " min stat"
+			exclaim = "."
+		end
 		local message
 		if Data.yellow then
 			message = "caught"
@@ -1711,7 +1696,7 @@ Strategies.functions = {
 				Bridge.chat(message, false, potionCount)
 			end
 		end
-		return healAndPotion({chain=data.chain}, healAmount)
+		return strategyFunctions.potion({hp=healAmount, chain=data.chain})
 	end,
 
 	fightMisty = function()
@@ -1883,7 +1868,7 @@ Strategies.functions = {
 	end,
 
 	shopRepels = function()
-		local repelCount = 10
+		local repelCount = Data.yellow and 10 or 9
 		return Shop.transaction {
 			direction = "Up",
 			buy = {{name="super_repel", index=3, amount=repelCount}}
@@ -2232,7 +2217,8 @@ Strategies.functions = {
 			Bridge.chat("is healing before Lorelei to skip the Elite 4 Center...")
 		end
 
-		return healAndPotion(data, Combat.healthFor("LoreleiDewgong"))
+		data.hp = Combat.healthFor("LoreleiDewgong")
+		return strategyFunctions.potion(data)
 	end,
 
 	centerSkip = function()
@@ -2269,7 +2255,7 @@ Strategies.functions = {
 		elseif curr_hp + Constants.SUPER_POTION_HEAL * 2 < min_recovery then
 			enableFull = Inventory.count("super_potion") < 2
 		end
-		return healAndPotion({full=enableFull, chain=true}, min_recovery)
+		return strategyFunctions.potion({hp=min_recovery, full=enableFull, chain=true})
 	end,
 
 	champion = function()
