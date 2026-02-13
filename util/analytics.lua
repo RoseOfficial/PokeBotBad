@@ -21,6 +21,8 @@ local session = {
 	victoryTimes = {},
 	resetReasons = {},
 	resetAreas = {},
+	strategyResets = {},
+	strategyCompletes = {},
 	startClock = nil,
 }
 
@@ -195,9 +197,18 @@ function Analytics.init(resetLogPath, victoryLogPath)
 	end
 end
 
+function Analytics.onStrategyComplete(strategyName)
+	if not strategyName then return end
+	increment(session.strategyCompletes, strategyName)
+end
+
 function Analytics.onReset(data)
 	allTime.resets = allTime.resets + 1
 	session.resets = session.resets + 1
+
+	if data.strategy then
+		increment(session.strategyResets, data.strategy)
+	end
 
 	if data.area then
 		increment(allTime.resetAreas, data.area)
@@ -280,6 +291,53 @@ function Analytics.getResetReasons()
 	return table.concat(parts, " ")
 end
 
+local function calculateStrategyStats()
+	local merged = {}
+	for name, count in pairs(session.strategyCompletes) do
+		if not merged[name] then merged[name] = {resets = 0, completes = 0} end
+		merged[name].completes = count
+	end
+	for name, count in pairs(session.strategyResets) do
+		if not merged[name] then merged[name] = {resets = 0, completes = 0} end
+		merged[name].resets = count
+	end
+
+	local result = {}
+	local minAttempts = Constants.ANALYTICS_MIN_STRATEGY_ATTEMPTS
+	for name, data in pairs(merged) do
+		local total = data.resets + data.completes
+		if total >= minAttempts then
+			local failRate = data.resets / total
+			table.insert(result, {
+				name = name,
+				resets = data.resets,
+				completes = data.completes,
+				total = total,
+				failRate = failRate,
+			})
+		end
+	end
+	table.sort(result, function(a, b) return a.failRate > b.failRate end)
+	return result
+end
+
+function Analytics.getDeadliestStrategies(limit)
+	local sessionRuns = session.resets + session.victories
+	if sessionRuns < Constants.ANALYTICS_MIN_RUNS_FOR_STRATEGY_DISPLAY then
+		return nil
+	end
+	local stats = calculateStrategyStats()
+	if #stats == 0 then return nil end
+	local result = {}
+	for i = 1, math.min(limit or 3, #stats) do
+		local entry = stats[i]
+		if entry.resets == 0 then break end
+		table.insert(result, string.format("%s %d/%d %.0f%%", entry.name, entry.resets, entry.total, entry.failRate * 100))
+	end
+	if #result == 0 then return nil end
+	return result
+end
+
 function Analytics.summary()
 	local totalRuns = allTime.resets + allTime.victories
 
@@ -332,6 +390,18 @@ function Analytics.summary()
 		local mins = math.floor((duration % 3600) / 60)
 		p("Duration: "..hours.."h "..mins.."m", true)
 	end
+	local deadliest = calculateStrategyStats()
+	if #deadliest > 0 then
+		p("", true)
+		p("-- Deadliest Strategies (Session) --", true)
+		for i, entry in ipairs(deadliest) do
+			if i > 10 then break end
+			if entry.resets == 0 then break end
+			local pct = string.format("%.1f%%", entry.failRate * 100)
+			p("  "..entry.name..": "..entry.resets.."/"..entry.total.." ("..pct.." fail)", true)
+		end
+	end
+
 	p("====================", true)
 end
 

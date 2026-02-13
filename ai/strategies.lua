@@ -94,6 +94,7 @@ function Strategies.hardReset(reason, message, extra, wait)
 			reasonCode = reason,
 			reasonText = message,
 			seed = Data.run.seed,
+			strategy = lastStrategyName,
 		})
 	else
 		Analytics.onVictory({
@@ -1882,7 +1883,7 @@ Strategies.functions = {
 	end,
 
 	shopRepels = function()
-		local repelCount = Data.yellow and 10 or 9
+		local repelCount = 10
 		return Shop.transaction {
 			direction = "Up",
 			buy = {{name="super_repel", index=3, amount=repelCount}}
@@ -2340,6 +2341,7 @@ function Strategies.execute(data)
 	end
 
 	if strategyFunction(data) then
+		Analytics.onStrategyComplete(data.s)
 		status = {tries=0}
 		Strategies.status = status
 		strategyFrameCount = 0
