@@ -26,6 +26,14 @@ local Analytics = require "util.analytics"
 local splitNumber, splitTime = 0, 0
 local resetting
 
+-- Pace-aware reset tracking
+local paceState = {
+	surplus = 0,
+	passedCheckpoints = {},
+	pendingCheckpoint = nil,
+	pendingSurplus = 0,
+}
+
 local status = {tries = 0, canProgress = nil, initialized = false}
 local stats = {}
 Strategies.status = status
@@ -41,11 +49,24 @@ local strategyFunctions
 
 -- RISK/RESET
 
-function Strategies.getTimeRequirement(name)
-	local timeCalculation = Strategies.timeRequirements[name]
-	if timeCalculation then
-		return timeCalculation()
+local function getPaceAdjustedLimit(name)
+	local base = Strategies.timeRequirements[name]
+	if not base then return nil end
+	local baseMinutes = base()
+
+	if not PACE_AWARE_RESETS or not RESET_FOR_TIME then
+		return baseMinutes
 	end
+
+	local bonus = paceState.surplus * Constants.PACE_CARRY_FACTOR
+	local maxBonus = Constants.PACE_MAX_BONUS_SECONDS / 60
+	bonus = math.min(bonus, maxBonus)
+	local floor = baseMinutes * Constants.PACE_MIN_LIMIT_FACTOR
+	return math.max(floor, baseMinutes + bonus)
+end
+
+function Strategies.getTimeRequirement(name)
+	return getPaceAdjustedLimit(name)
 end
 
 function Strategies.reboot()
@@ -194,11 +215,26 @@ function Strategies.resetTime(timeLimit, explanation, custom)
 			return Strategies.reset("time", explanation)
 		end
 	end
+	-- Track pending pace surplus for named checkpoints (finalized in execute())
+	if type(timeLimit) == "string" and PACE_AWARE_RESETS and RESET_FOR_TIME then
+		if not paceState.passedCheckpoints[timeLimit] then
+			local limit = getPaceAdjustedLimit(timeLimit)
+			if limit then
+				paceState.pendingCheckpoint = timeLimit
+				paceState.pendingSurplus = limit - Utils.igt() / 60
+			end
+		end
+	end
 end
 
 function Strategies.setYolo(name, forced)
 	local minimumTime = Strategies.getTimeRequirement(name)
 	if minimumTime and (forced or RESET_FOR_TIME) then
+		-- Record pace checkpoint at this boundary
+		if PACE_AWARE_RESETS and RESET_FOR_TIME and not paceState.passedCheckpoints[name] then
+			paceState.passedCheckpoints[name] = true
+			paceState.surplus = minimumTime - Utils.igt() / 60
+		end
 		local shouldYolo = BEAST_MODE or Strategies.overMinute(minimumTime)
 		if Control.yolo ~= shouldYolo then
 			Control.yolo = shouldYolo
@@ -733,9 +769,10 @@ Strategies.functions = {
 		Data.increment("reset_split")
 
 		Bridge.split(data and data.finished)
-		if Strategies.replay or not INTERNAL then
-			splitNumber = splitNumber + 1
+		splitNumber = splitNumber + 1
+		Analytics.onSplit(splitNumber, Control.areaName, Utils.igt())
 
+		if Strategies.replay or not INTERNAL then
 			local timeDiff
 			splitTime, timeDiff = Utils.timeSince(splitTime)
 			if timeDiff then
@@ -2304,6 +2341,10 @@ Strategies.functions = {
 
 strategyFunctions = Strategies.functions
 
+function Strategies.getPaceSurplus()
+	return paceState.surplus
+end
+
 function Strategies.execute(data)
 	local strategyFunction = strategyFunctions[data.s]
 	if not strategyFunction then
@@ -2328,6 +2369,14 @@ function Strategies.execute(data)
 
 	if strategyFunction(data) then
 		Analytics.onStrategyComplete(data.s)
+		-- Finalize pending pace checkpoint from resetTime() calls
+		if PACE_AWARE_RESETS and RESET_FOR_TIME and paceState.pendingCheckpoint then
+			if not paceState.passedCheckpoints[paceState.pendingCheckpoint] then
+				paceState.passedCheckpoints[paceState.pendingCheckpoint] = true
+				paceState.surplus = paceState.pendingSurplus
+			end
+			paceState.pendingCheckpoint = nil
+		end
 		status = {tries=0}
 		Strategies.status = status
 		strategyFrameCount = 0
@@ -2388,7 +2437,9 @@ function Strategies.softReset()
 	resetting = nil
 	strategyFrameCount = 0
 	lastStrategyName = nil
+	paceState = { surplus = 0, passedCheckpoints = {}, pendingCheckpoint = nil, pendingSurplus = 0 }
 	Strategies.deepRun = false
+	Analytics.resetSplits()
 	Strategies.resetGame()
 end
 

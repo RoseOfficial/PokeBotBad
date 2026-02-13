@@ -9,6 +9,7 @@ end
 
 RESET_FOR_TIME = config.RESET_FOR_TIME or false
 BEAST_MODE = config.BEAST_MODE or false
+PACE_AWARE_RESETS = config.PACE_AWARE_RESETS or false
 
 INITIAL_SPEED = config.INITIAL_SPEED or 1500
 AFTER_BROCK_SPEED = config.AFTER_BROCK_SPEED or 1500
@@ -53,6 +54,7 @@ local Paint = require "util.paint"
 local Utils = require "util.utils"
 local Settings = require "util.settings"
 local Analytics = require "util.analytics"
+local Constants = require "util.constants"
 
 local hasAlreadyStartedPlaying = false
 local oldSeconds
@@ -117,7 +119,8 @@ else
 	end
 end
 
-Analytics.init(RESET_LOG, VICTORY_LOG)
+local PB_SPLITS_LOG = "./wiki/"..Data.gameName.."/"..Constants.PB_SPLITS_FILENAME
+Analytics.init(RESET_LOG, VICTORY_LOG, PB_SPLITS_LOG)
 
 -- LOOP
 

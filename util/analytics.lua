@@ -26,6 +26,15 @@ local session = {
 	startClock = nil,
 }
 
+-- Internal state: split tracking
+local splits = {
+	pbSplits = {},      -- splitNumber -> {area=string, igt=seconds}
+	pbFinish = nil,     -- total PB time in seconds
+	currentSplits = {}, -- splitNumber -> {area=string, igt=seconds}
+	latestSplit = 0,    -- highest split number in current run
+	pbSplitsPath = nil, -- file path for saving/loading
+}
+
 -- Helpers
 
 local function findPlain(str, substr)
@@ -184,14 +193,60 @@ local function parseLogs(resetPath, victoryPath)
 	table.sort(allTime.victoryTimes)
 end
 
+-- Split tracking
+
+local function loadPBSplits(path)
+	if not path then return end
+	local f = io.open(path, "r")
+	if not f then return end
+	for line in f:lines() do
+		local num, area, igt = line:match("^(%d+)|(.+)|(%d+)$")
+		if num then
+			splits.pbSplits[tonumber(num)] = {
+				area = area,
+				igt = tonumber(igt),
+			}
+		end
+	end
+	f:close()
+end
+
+local function savePBSplits(path, splitData)
+	if not path then return end
+	local f = io.open(path, "w")
+	if not f then
+		print("Could not save PB splits: "..path)
+		return
+	end
+	local keys = {}
+	for k in pairs(splitData) do
+		table.insert(keys, k)
+	end
+	table.sort(keys)
+	for _, k in ipairs(keys) do
+		local entry = splitData[k]
+		f:write(k.."|"..entry.area.."|"..entry.igt.."\n")
+	end
+	f:close()
+end
+
 -- Public API
 
-function Analytics.init(resetLogPath, victoryLogPath)
+function Analytics.init(resetLogPath, victoryLogPath, pbSplitsPath)
 	session.startClock = os.time()
 	parseLogs(resetLogPath, victoryLogPath)
+
+	splits.pbSplitsPath = pbSplitsPath
+	loadPBSplits(pbSplitsPath)
+	if allTime.pbSeconds < math.huge then
+		splits.pbFinish = allTime.pbSeconds
+	end
+
 	local totalRuns = allTime.resets + allTime.victories
 	local pbStr = allTime.pb or "N/A"
-	p("Analytics loaded: "..totalRuns.." runs, "..allTime.victories.." victories, PB: "..pbStr, true)
+	local splitCount = 0
+	for _ in pairs(splits.pbSplits) do splitCount = splitCount + 1 end
+	p("Analytics loaded: "..totalRuns.." runs, "..allTime.victories.." victories, PB: "..pbStr.." ("..splitCount.." PB splits)", true)
 	if allTime.parseWarnings > 0 then
 		p("Analytics: "..allTime.parseWarnings.." lines skipped during log parsing", true)
 	end
@@ -248,14 +303,94 @@ function Analytics.onVictory(data)
 				local oldPBSecs = allTime.pbSeconds
 				allTime.pbSeconds = secs
 				allTime.pb = data.time
+				splits.pbFinish = secs
 				if oldPBSecs < math.huge then
 					p("*** NEW PB: "..data.time.." (improved by "..secondsToTime(oldPBSecs - secs)..") ***", true)
 				else
 					p("*** NEW PB: "..data.time.." ***", true)
 				end
+				-- Save current run's splits as new PB splits
+				if splits.latestSplit > 0 then
+					splits.pbSplits = {}
+					for k, v in pairs(splits.currentSplits) do
+						splits.pbSplits[k] = {area = v.area, igt = v.igt}
+					end
+					savePBSplits(splits.pbSplitsPath, splits.pbSplits)
+					p("PB splits saved ("..splits.latestSplit.." splits)", true)
+				end
 			end
 		end
 	end
+end
+
+function Analytics.onSplit(splitNumber, areaName, igtSeconds)
+	if not splitNumber or not igtSeconds then return end
+	splits.currentSplits[splitNumber] = {
+		area = areaName or "unknown",
+		igt = igtSeconds,
+	}
+	splits.latestSplit = splitNumber
+end
+
+function Analytics.getSplitDelta()
+	if splits.latestSplit == 0 then return nil end
+	local current = splits.currentSplits[splits.latestSplit]
+	local pb = splits.pbSplits[splits.latestSplit]
+	if not current or not pb then return nil end
+	local delta = current.igt - pb.igt
+	local sign = delta >= 0 and "+" or "-"
+	local absDelta = math.abs(delta)
+	if absDelta >= 60 then
+		local mins = math.floor(absDelta / 60)
+		local secs = absDelta % 60
+		return sign..mins..":"..string.format("%02d", secs)
+	end
+	return sign..absDelta.."s"
+end
+
+function Analytics.getPace()
+	if not splits.pbFinish or splits.latestSplit == 0 then return nil end
+	local current = splits.currentSplits[splits.latestSplit]
+	local pb = splits.pbSplits[splits.latestSplit]
+	if not current or not pb then return nil end
+
+	local currentDelta = current.igt - pb.igt
+
+	-- Collect deltas at every completed split to detect a trend
+	local deltas = {}
+	for i = 1, splits.latestSplit do
+		local c = splits.currentSplits[i]
+		local p = splits.pbSplits[i]
+		if c and p then
+			table.insert(deltas, {split = i, delta = c.igt - p.igt})
+		end
+	end
+
+	-- Need 2+ data points to extrapolate a trend; otherwise use simple additive
+	if #deltas < 2 then
+		return "~"..secondsToTime(splits.pbFinish + currentDelta)
+	end
+
+	-- Trend: how much is the delta changing per split?
+	local trendPerSplit = (deltas[#deltas].delta - deltas[1].delta)
+	                    / (deltas[#deltas].split - deltas[1].split)
+
+	-- Count remaining splits from PB data
+	local maxPBSplit = 0
+	for k in pairs(splits.pbSplits) do
+		if k > maxPBSplit then maxPBSplit = k end
+	end
+	local remainingSplits = math.max(0, maxPBSplit - splits.latestSplit)
+
+	-- Dampened extrapolation (0.5x) prevents wild swings from small samples
+	local projectedDelta = currentDelta + trendPerSplit * remainingSplits * 0.5
+	local estimatedFinish = math.max(0, splits.pbFinish + projectedDelta)
+	return "~"..secondsToTime(estimatedFinish)
+end
+
+function Analytics.resetSplits()
+	splits.currentSplits = {}
+	splits.latestSplit = 0
 end
 
 function Analytics.pb()

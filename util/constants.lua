@@ -92,9 +92,18 @@ Constants.EVOLUTION_TIMEOUT_FRAMES = 3600
 Constants.VICTORY_TIMEOUT_FRAMES = 1800
 Constants.CHAMPION_MENU_VALUE = 252
 
+-- Pace-aware resets
+Constants.PACE_CARRY_FACTOR = 0.5       -- How much surplus carries forward (0=none, 1=full)
+Constants.PACE_MAX_BONUS_SECONDS = 60   -- Max seconds a checkpoint can gain from surplus
+Constants.PACE_MIN_LIMIT_FACTOR = 0.85  -- Floor: never tighten past 85% of base limit
+
 -- Analytics
 Constants.ANALYTICS_SUMMARY_INTERVAL = 50
 Constants.ANALYTICS_MIN_RUNS_FOR_STRATEGY_DISPLAY = 10
 Constants.ANALYTICS_MIN_STRATEGY_ATTEMPTS = 3
+Constants.PB_SPLITS_FILENAME = "pb_splits.txt"
+
+-- Overlay
+Constants.OVERLAY_LINE_HEIGHT = 10
 
 return Constants
