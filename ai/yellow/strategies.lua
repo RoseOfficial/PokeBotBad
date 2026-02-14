@@ -54,57 +54,6 @@ end
 
 Strategies.timeRequirements = {
 
-	nidoran = function()
-		return 7.5 + timeForFlier()
-	end,
-
-	forest = function() --YOLO
-		return 13 + timeForFlier() + timeForStats(true)
-	end,
-
-	brock = function()
-		return 15 + timeForFlier() + timeForStats(true)
-	end,
-
-	mt_moon = function()
-		local timeLimit = 28.25 + timeForStats(true)
-		if Pokemon.inParty("paras", "sandshrew") then
-			timeLimit = timeLimit + 0.25
-		end
-		if Pokemon.getExp() > 4200 then
-			timeLimit = timeLimit + 0.15
-		end
-		return timeLimit
-	end,
-
-	misty = function() --TWEET
-		return 41 + timeForStats()
-	end,
-
-	trash = function() --YOLO
-		return 49.75 + timeForStats()
-	end,
-
-	mom = function() --YOLO
-		return 90
-	end,
-
-	victory_road = function() --TWEET
-		local timeLimit = 101.5
-		if Strategies.requiresE4Center(true, true) then
-			timeLimit = timeLimit - 0.1
-		end
-		return timeLimit
-	end,
-
-	blue = function() --YOLO
-		return 112.28
-	end,
-
-	champion = function() --PB
-		return 115.28
-	end,
-
 }
 
 -- HELPERS

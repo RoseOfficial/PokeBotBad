@@ -118,6 +118,23 @@ local function calcDamage(move, attacker, defender, rng)
 	return floor(damage * Constants.MIN_DAMAGE_RATIO), damage
 end
 
+local function critRate(move, baseSpeed)
+	local T = floor(baseSpeed / 2)
+	if move.critical then
+		T = math.min(T * 8, 255)
+	end
+	return T / 256
+end
+Combat.critRate = critRate
+
+local function calcCritDamage(move, attacker, defender)
+	local critMove = {}
+	for k, v in pairs(move) do critMove[k] = v end
+	critMove.critical = true
+	local _, maxCritDmg = calcDamage(critMove, attacker, defender)
+	return maxCritDmg
+end
+
 local function getType(prefix, ty)
 	local key1 = prefix.."type1"
 	local key2 = prefix.."type2"
@@ -320,8 +337,9 @@ local function activePokemon(preset)
 			end
 		end
 	else
+		local opponentId = Memory.value("battle", "opponent_id")
 		enemy = {
-			id = Memory.value("battle", "opponent_id"),
+			id = opponentId,
 			level = Memory.value("battle", "opponent_level"),
 			hp = Memory.double("battle", "opponent_hp"),
 			att = Memory.double("battle", "opponent_attack"),
@@ -331,6 +349,7 @@ local function activePokemon(preset)
 			type1 = getOpponentType(0),
 			type2 = getOpponentType(1),
 			moves = getMoves(1),
+			baseSpeed = Constants.BASE_SPEED[opponentId] or 0,
 		}
 	end
 	return ours, enemy
@@ -442,6 +461,16 @@ function Combat.inKillRange(draw)
 		end
 		if outsped or isConfused or turnsToKill > 1 or ours.speed <= enemy.speed or Pokemon.info(0, "status") > 0 then
 			return ours, hpReq
+		end
+	end
+	-- Proactive crit survival: heal if a crit would kill and crit rate exceeds threshold
+	if CRIT_SURVIVAL_THRESHOLD and enemy.baseSpeed and enemy.baseSpeed > 0 then
+		local cRate = critRate(enemyAttack, enemy.baseSpeed)
+		if cRate >= CRIT_SURVIVAL_THRESHOLD then
+			local critDmg = calcCritDamage(enemyAttack, enemy, ours)
+			if critDmg >= ours.hp then
+				return ours, critDmg
+			end
 		end
 	end
 end

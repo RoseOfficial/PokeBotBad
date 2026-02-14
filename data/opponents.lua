@@ -10,6 +10,7 @@ local Opponents = {
 		speed = 22,
 		level = 11,
 		att = 19,
+		baseSpeed = 72,
 
 		moves = {
 			{
@@ -35,6 +36,7 @@ local Opponents = {
 		speed = 45,
 		level = 30,
 		att = 43,
+		baseSpeed = 60,
 
 		moves = {
 			{
@@ -59,6 +61,7 @@ local Opponents = {
 		speed = 72,
 		level = 38,
 		att = 106,
+		baseSpeed = 81,
 		moves = {
 			{
 				name = "Hydro-Pump",
@@ -86,6 +89,7 @@ local Opponents = {
 		speed = 56,
 		level = 34,
 		att = 60,
+		baseSpeed = 67,
 		moves = {
 			{
 				name = "Headbutt",
@@ -109,6 +113,7 @@ local Opponents = {
 		speed = 56,
 		level = 34,
 		att = 60,
+		baseSpeed = 67,
 		moves = {
 			{
 				name = "Confusion",
@@ -132,6 +137,7 @@ local Opponents = {
 		speed = 63,
 		level = 43,
 		att = 90,
+		baseSpeed = 60,
 		moves = {
 			{
 				name = "Self-Destruct",
@@ -155,6 +161,7 @@ local Opponents = {
 		speed = 34,
 		level = 45,
 		att = 89,
+		baseSpeed = 25,
 		moves = {
 			{
 				name = "Stomp",
@@ -179,6 +186,7 @@ local Opponents = {
 		speed = 89,
 		level = 54,
 		att = 90,
+		baseSpeed = 70,
 		moves = {
 			{
 				name = "Aurora-Beam",
@@ -206,6 +214,7 @@ local Opponents = {
 		speed = 108,
 		level = 58,
 		att = 160,
+		baseSpeed = 81,
 		moves = {
 			{
 				name = "Hydro-Pump",
@@ -233,6 +242,7 @@ local Opponents = {
 		speed = 125,
 		level = 61,
 		att = 113,
+		baseSpeed = 91,
 		moves = {
 			{
 				name = "Wing-Attack",
@@ -256,6 +266,7 @@ local Opponents = {
 		speed = 125,
 		level = 61,
 		att = 113,
+		baseSpeed = 91,
 		moves = {
 			{
 				name = "Sky-Attack",
@@ -281,6 +292,7 @@ local Opponents = {
 		speed = 108,
 		level = 48,
 		att = 86,
+		baseSpeed = 100,
 
 		moves = {
 			{
@@ -305,6 +317,7 @@ local Opponents = {
 		speed = 94,
 		level = 61,
 		att = 137,
+		baseSpeed = 65,
 		moves = {
 			{
 				max_pp = 10,

@@ -691,6 +691,7 @@ local moves = {
 		power = 55,
 		max_pp = 25,
 		accuracy = 95,
+		critical = true,
 	},
 	{
 		name = 'Solar-Beam',
@@ -1397,6 +1398,7 @@ local moves = {
 		power = 90,
 		max_pp = 10,
 		accuracy = 90,
+		critical = true,
 	},
 	{
 		name = 'Explosion',

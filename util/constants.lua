@@ -145,6 +145,36 @@ Constants.THRESHOLD_TARGET_RESET_RATE = 0.25  -- ideal time-reset rate per check
 Constants.THRESHOLD_MAX_ADJUSTMENT = 0.10     -- max +/- 10% from base
 Constants.THRESHOLD_MIN_SAMPLES = 5           -- min time-resets before adjusting
 
+-- Crit survival awareness
+Constants.CRIT_SURVIVAL_THRESHOLD = 0.15  -- Heal if crit chance >= 15% and crit would kill
+
+-- Species base speed lookup (Gen 1 base stats for route-relevant Pokemon)
+-- Used to calculate crit rates: floor(baseSpeed/2) / 256
+Constants.BASE_SPEED = {
+	[165] = 72,   -- Rattata
+	[150] = 56,   -- Pidgey
+	[5]   = 70,   -- Spearow
+	[3]   = 50,   -- Nidoran M
+	[169] = 20,   -- Geodude
+	[34]  = 70,   -- Onix
+	[106] = 35,   -- Machop
+	[6]   = 100,  -- Voltorb
+	[129] = 67,   -- Hypno
+	[55]  = 35,   -- Koffing
+	[143] = 60,   -- Weezing
+	[18]  = 25,   -- Rhyhorn
+	[30]  = 60,   -- Tangela
+	[22]  = 81,   -- Gyarados
+	[151] = 91,   -- Pidgeot
+	[120] = 70,   -- Dewgong
+	[66]  = 80,   -- Dragonite
+	[97]  = 65,   -- Sandslash
+	[83]  = 100,  -- Ninetales
+	[4]   = 35,   -- Clefairy
+	[107] = 55,   -- Zubat
+	[46]  = 25,   -- Paras
+}
+
 -- Analytics
 Constants.ANALYTICS_SUMMARY_INTERVAL = 50
 Constants.ANALYTICS_MIN_RUNS_FOR_STRATEGY_DISPLAY = 10

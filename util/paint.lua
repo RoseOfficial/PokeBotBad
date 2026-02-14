@@ -1,8 +1,10 @@
 local Paint = {}
 
 local Walk = require "action.walk"
+local Combat = require "ai.combat"
 local Control = require "ai.control"
 local Strategies = require "ai.strategies"
+local Memory = require "util.memory"
 local Utils = require "util.utils"
 local Analytics = require "util.analytics"
 local Constants = require "util.constants"
@@ -62,7 +64,23 @@ function Paint.draw(currentMap)
 		y = y + LINE
 	end
 
-	-- Line 7: Run count, win rate, PB (compact)
+	-- Line 7: Crit danger indicator (during battles)
+	if CRIT_SURVIVAL_THRESHOLD and Memory.value("game", "battle") > 0 then
+		local enemyAttack = Combat.enemyAttack()
+		if enemyAttack then
+			local ours, enemy = Combat.activePokemon()
+			if enemy.baseSpeed and enemy.baseSpeed > 0 then
+				local cRate = Combat.critRate(enemyAttack, enemy.baseSpeed)
+				if cRate >= CRIT_SURVIVAL_THRESHOLD then
+					local pct = math.floor(cRate * 100)
+					drawText(0, y, "Crit: "..pct.."%")
+				end
+			end
+		end
+		y = y + LINE
+	end
+
+	-- Line 8: Run count, win rate, PB (compact)
 	local displayStats = Analytics.getDisplayStats()
 	if displayStats then
 		drawText(0, y, "#"..displayStats.totalRuns.." | "..displayStats.winRate.." win | PB "..displayStats.pb)

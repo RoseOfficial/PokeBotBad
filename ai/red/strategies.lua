@@ -247,7 +247,7 @@ end
 -- STATE
 
 local function canRiskGiovanni()
-	return stats.nidoran.attackDV >= 11 and stats.nidoran.specialDV >= 4
+	return stats.nidoran and stats.nidoran.attackDV >= 11 and stats.nidoran.specialDV >= 4
 end
 
 function Strategies.checkSquirtleStats(attack, defense, speed, special)
